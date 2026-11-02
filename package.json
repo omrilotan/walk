@@ -1,0 +1,11 @@
+{
+	"name": "walk",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Control and track your walking pad from the browser. Works with PitPat walking pads.",
+	"license": "Unlicense",
+	"type": "module",
+	"scripts": {
+		"start": "npx serve -l 8642 ."
+	}
+}

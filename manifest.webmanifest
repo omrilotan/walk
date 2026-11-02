@@ -1,0 +1,10 @@
+{
+	"name": "Walk",
+	"short_name": "Walk",
+	"description": "Control and track your PitPat walking pad. Works with PitPat walking pads; not affiliated with PitPat.",
+	"start_url": "./",
+	"display": "standalone",
+	"background_color": "#f4f5f5",
+	"theme_color": "#16a085",
+	"icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
