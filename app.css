@@ -387,15 +387,8 @@ button:active:not(:disabled),
 }
 
 #greeting,
-#lifetime,
-.privacy {
+#lifetime {
 	font-size: 13px;
-}
-
-.privacy {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
 }
 
 /* ---------------------------------------------------------------- live */
@@ -1245,6 +1238,88 @@ body[data-state="starting"] #speed-now {
 	font-size: 16px;
 }
 
+/* Not connected: Connect is the one thing to do, so make it the primary button. */
+#connect[data-connected="false"] {
+	color: var(--on-accent);
+	background: var(--accent);
+	border-color: var(--accent);
+}
+
+#connect[data-connected="false"]:hover {
+	background: var(--accent-hover);
+	border-color: var(--accent-hover);
+}
+
+/* ---------------------------------------------------------------- about */
+
+.about {
+	width: min(480px, calc(100vw - 32px));
+	max-height: calc(100dvh - 32px);
+	padding: 16px;
+	color: var(--text);
+	background: var(--surface);
+	border: 1px solid var(--line);
+}
+
+.about::backdrop {
+	background: rgb(0 0 0 / 0.5);
+}
+
+.about-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.about h2 {
+	margin: 0;
+	font-size: 20px;
+	letter-spacing: -0.02em;
+}
+
+.about p {
+	margin: 0 0 12px;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.about-list {
+	display: grid;
+	gap: 10px;
+	margin: 0 0 16px;
+	padding: 0;
+	font-size: 14px;
+	line-height: 1.45;
+	list-style: none;
+}
+
+.about-list li {
+	display: grid;
+	grid-template-columns: 20px 1fr;
+	gap: 8px;
+}
+
+.about-list i {
+	padding-top: 2px;
+	font-size: 18px;
+	color: var(--accent);
+}
+
+.about-link {
+	width: 100%;
+	margin-bottom: 12px;
+	color: var(--on-accent);
+	background: var(--accent);
+	border-color: var(--accent);
+}
+
+.about-link:hover {
+	background: var(--accent-hover);
+	border-color: var(--accent-hover);
+}
+
 /* ---------------------------------------------------------------- footer */
 
 .foot {
@@ -1319,7 +1394,7 @@ kbd {
 	}
 	.brand-name small,
 	.status span,
-	#connect span,
+	#connect[data-connected="true"] span,
 	.foot > span:first-child {
 		display: none;
 	}

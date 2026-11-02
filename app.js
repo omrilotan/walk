@@ -121,6 +121,7 @@ function renderConnection(connected) {
 	chip.dataset.connected = String(connected);
 	chip.querySelector("i").className = connected ? "ph-bold ph-bluetooth-connected" : "ph-bold ph-bluetooth-slash";
 	chip.querySelector("span").textContent = connected ? pad.device?.name ?? "Connected" : "Not connected";
+	$("#connect").dataset.connected = String(connected);
 	$("#connect").querySelector("span").textContent = connected ? "Disconnect" : "Connect";
 	if (!connected) {
 		ui.state = "offline";
@@ -468,6 +469,10 @@ async function init() {
 		loadSessions();
 	});
 
+	$("#info").addEventListener("click", () => $("#about").showModal());
+	$("#about").addEventListener("click", (event) => {
+		if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
+	});
 	$("#theme").addEventListener("click", () => {
 		const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
 		applyTheme(next);
