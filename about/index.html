@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="theme-color" content="#f4f5f5" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#101413" media="(prefers-color-scheme: dark)" />
+		<title>Superun & DeerRun walking pad app, no PitPat app needed | Walk</title>
+		<meta
+			name="description"
+			content="Control your Superun or DeerRun walking pad from the browser, without the PitPat app. Free, no install, no account. Start, pause, set speed and track every walk. Works with PitPat walking pads."
+		/>
+		<meta name="keywords" content="Superun walking pad, DeerRun walking pad, PitPat app alternative, PitPat walking pad, walking pad without app, under desk treadmill app, Superun app, DeerRun app, web bluetooth treadmill" />
+		<meta name="author" content="Omri Lotan" />
+		<meta name="robots" content="index, follow, max-image-preview:large" />
+		<link rel="canonical" href="https://omrilotan.com/walk/about/" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Walk" />
+		<meta property="og:url" content="https://omrilotan.com/walk/about/" />
+		<meta property="og:title" content="Walk: your Superun or DeerRun walking pad, without the PitPat app" />
+		<meta
+			property="og:description"
+			content="A free web app for Superun, DeerRun and other PitPat walking pads. No install, no account, private by design."
+		/>
+		<meta property="og:image" content="https://omrilotan.com/walk/images/home-office.jpg" />
+		<meta property="og:image:type" content="image/jpeg" />
+		<meta property="og:image:width" content="1536" />
+		<meta property="og:image:height" content="1024" />
+		<meta property="og:image:alt" content="A Superun-style walking pad under a standing desk, with Walk open on the monitor mid-walk" />
+		<meta property="og:locale" content="en_GB" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Walk: your Superun or DeerRun walking pad, without the PitPat app" />
+		<meta
+			name="twitter:description"
+			content="Free browser app for Superun, DeerRun and other PitPat walking pads. No install, no account."
+		/>
+		<meta name="twitter:image" content="https://omrilotan.com/walk/images/home-office.jpg" />
+		<meta name="twitter:image:alt" content="A walking pad under a standing desk, with Walk open on the monitor mid-walk" />
+
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@graph": [
+					{
+						"@type": "WebPage",
+						"@id": "https://omrilotan.com/walk/about/",
+						"url": "https://omrilotan.com/walk/about/",
+						"name": "Superun & DeerRun walking pad app, no PitPat app needed",
+						"description": "Control your Superun or DeerRun walking pad from the browser, without the PitPat app.",
+						"inLanguage": "en",
+						"primaryImageOfPage": "https://omrilotan.com/walk/images/home-office.jpg",
+						"about": { "@id": "https://omrilotan.com/walk/#app" },
+						"mentions": [
+							{ "@type": "Brand", "name": "Superun" },
+							{ "@type": "Brand", "name": "DeerRun" },
+							{ "@type": "SoftwareApplication", "name": "PitPat" }
+						],
+						"breadcrumb": {
+							"@type": "BreadcrumbList",
+							"itemListElement": [
+								{ "@type": "ListItem", "position": 1, "name": "Walk", "item": "https://omrilotan.com/walk/" },
+								{ "@type": "ListItem", "position": 2, "name": "About", "item": "https://omrilotan.com/walk/about/" }
+							]
+						}
+					},
+					{
+						"@type": "WebApplication",
+						"@id": "https://omrilotan.com/walk/#app",
+						"name": "Walk",
+						"alternateName": "Walk: Superun and DeerRun walking pad controller",
+						"url": "https://omrilotan.com/walk/",
+						"description": "Free browser app that controls Superun, DeerRun and other PitPat walking pads over Bluetooth, without the PitPat app. Walks stay on your device.",
+						"applicationCategory": "HealthApplication",
+						"operatingSystem": "Windows, macOS, Linux, ChromeOS, Android",
+						"browserRequirements": "Requires Web Bluetooth: Chrome, Edge or Opera",
+						"isAccessibleForFree": true,
+						"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+						"screenshot": "https://omrilotan.com/walk/images/desktop.png",
+						"author": { "@type": "Person", "name": "Omri Lotan", "url": "https://omrilotan.com/" }
+					},
+					{
+						"@type": "FAQPage",
+						"mainEntity": [
+							{
+								"@type": "Question",
+								"name": "Can I use my Superun or DeerRun walking pad without the PitPat app?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "Yes. Walk controls Superun, DeerRun and other PitPat walking pads straight from the browser over Bluetooth. Close the PitPat app first, because the pad connects to one device at a time."
+								}
+							},
+							{
+								"@type": "Question",
+								"name": "Is Walk really free?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "Yes. It's free and open source, in the public domain. No ads, no subscription, no account and nothing collected."
+								}
+							},
+							{
+								"@type": "Question",
+								"name": "Where are my walks stored?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "In your browser, on this device only. Walk has no server and no account. Export a backup now and then, and import it here or on another computer."
+								}
+							},
+							{
+								"@type": "Question",
+								"name": "Can I control my Superun or DeerRun walking pad from my phone?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "On Android, yes, in Chrome. On iPhone, no: Apple doesn't let websites use Bluetooth."
+								}
+							},
+							{
+								"@type": "Question",
+								"name": "Walk doesn't find my Superun or DeerRun pad. What should I do?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "Close the PitPat app, or turn off Bluetooth on the phone that runs it, make sure the pad is on, and press Connect again. Walk reconnects by itself after brief drops."
+								}
+							},
+							{
+								"@type": "Question",
+								"name": "Does Walk count steps on a Superun or DeerRun walking pad?",
+								"acceptedAnswer": {
+									"@type": "Answer",
+									"text": "Yes, when the pad reports them. Distance, time and calories come from the pad too."
+								}
+							}
+						]
+					}
+				]
+			}
+		</script>
+		<link rel="manifest" href="../manifest.webmanifest" />
+		<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+		<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+		<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" />
+		<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+		<link rel="stylesheet" href="../app.css" />
+		<script>
+			// Same saved theme as the app.
+			try {
+				const theme = localStorage.getItem("walk:theme");
+				if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+			} catch {}
+		</script>
+		<style>
+			.page {
+				max-width: 960px;
+				gap: 16px;
+			}
+
+			.hero {
+				display: grid;
+				gap: 14px;
+				padding: 24px 0 8px;
+			}
+
+			.hero h1 {
+				margin: 0;
+				font-size: clamp(28px, 5vw, 48px);
+				line-height: 1.05;
+				letter-spacing: -0.035em;
+			}
+
+			.hero .lead {
+				max-width: 40em;
+				font-size: 17px;
+				line-height: 1.5;
+				color: var(--muted);
+			}
+
+			.cta {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 10px;
+			}
+
+			.cta .btn-primary {
+				height: 48px;
+				padding: 0 22px;
+				font-size: 16px;
+				text-decoration: none;
+			}
+
+			.cta .btn {
+				height: 48px;
+				padding: 0 18px;
+			}
+
+			.pluses {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.pluses li {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				height: 32px;
+				padding: 0 12px;
+				font-size: 14px;
+				font-weight: 600;
+				color: var(--accent);
+				background: var(--accent-soft);
+				border: 1px solid var(--accent);
+			}
+
+			.desktop {
+				max-width: 720px;
+				margin: 16px auto 0;
+			}
+
+			.browser {
+				overflow: hidden;
+				background: var(--surface);
+				border: 1px solid var(--line);
+				border-radius: 10px;
+				box-shadow: 0 12px 32px rgb(0 0 0 / 0.12);
+			}
+
+			.browser-bar {
+				display: grid;
+				grid-template-columns: auto 1fr auto;
+				align-items: center;
+				gap: 12px;
+				height: 36px;
+				padding: 0 12px;
+				background: var(--surface-2);
+				border-bottom: 1px solid var(--line);
+			}
+
+			.browser-bar::after {
+				content: "";
+				width: 42px;
+			}
+
+			.dots {
+				display: flex;
+				gap: 6px;
+			}
+
+			.dots i {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				background: #ff5f57;
+			}
+
+			.dots i:nth-child(2) {
+				background: #febc2e;
+			}
+
+			.dots i:nth-child(3) {
+				background: #28c840;
+			}
+
+			.url {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 6px;
+				justify-self: center;
+				width: min(100%, 320px);
+				height: 24px;
+				font-size: 12px;
+				color: var(--muted);
+				background: var(--surface);
+				border: 1px solid var(--line);
+				border-radius: 6px;
+			}
+
+			.browser .shot {
+				border: 0;
+			}
+
+			.desktop figcaption {
+				margin-top: 8px;
+				text-align: center;
+			}
+
+			.shot {
+				display: block;
+				width: 100%;
+				height: auto;
+				border: 1px solid var(--line);
+			}
+
+			.page h2 {
+				margin: 0 0 12px;
+				font-size: 22px;
+				letter-spacing: -0.02em;
+			}
+
+			.page section p,
+			.page section li {
+				font-size: 15px;
+				line-height: 1.55;
+			}
+
+			.page section p + p {
+				margin-top: 10px;
+			}
+
+			.features {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+				gap: 12px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.features li {
+				display: grid;
+				grid-template-columns: 24px 1fr;
+				gap: 10px;
+				padding: 14px;
+				background: var(--surface);
+				border: 1px solid var(--line);
+			}
+
+			.features i {
+				padding-top: 2px;
+				font-size: 20px;
+				color: var(--accent);
+			}
+
+			.features b {
+				display: block;
+			}
+
+			.phones {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 12px;
+				max-width: 560px;
+				margin: 16px auto 0;
+			}
+
+			.steps {
+				display: grid;
+				gap: 10px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+				counter-reset: step;
+			}
+
+			.steps li {
+				display: grid;
+				grid-template-columns: 32px 1fr;
+				align-items: start;
+				gap: 12px;
+				counter-increment: step;
+			}
+
+			.steps li::before {
+				content: counter(step);
+				display: grid;
+				place-items: center;
+				width: 32px;
+				height: 32px;
+				font-weight: 700;
+				color: var(--on-accent);
+				background: var(--accent);
+			}
+
+			.steps li span {
+				padding-top: 5px;
+			}
+
+			.compat {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+				gap: 12px;
+			}
+
+			.compat h3 {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin: 0 0 6px;
+				font-size: 15px;
+			}
+
+			.compat .yes i {
+				color: var(--accent);
+			}
+
+			.compat .no i {
+				color: var(--bad);
+			}
+
+			.compat ul {
+				margin: 0;
+				padding-left: 18px;
+			}
+
+			.faq details {
+				padding: 12px 0;
+				border-top: 1px solid var(--line);
+			}
+
+			.faq details:last-child {
+				border-bottom: 1px solid var(--line);
+			}
+
+			.faq summary {
+				font-weight: 600;
+				cursor: pointer;
+			}
+
+			.faq details p {
+				margin-top: 8px;
+				color: var(--muted);
+			}
+
+			.warn {
+				border-color: var(--bad);
+			}
+
+			.page a:not(.btn, .btn-primary) {
+				color: var(--accent);
+			}
+
+			@media (max-width: 600px) {
+				.hero {
+					padding-top: 12px;
+				}
+
+				.cta .btn-primary,
+				.cta .btn {
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<header class="top">
+			<a class="brand" href="../" style="color: inherit; text-decoration: none">
+				<span class="mark"><i class="ph-bold ph-person-simple-walk"></i></span>
+				<span class="brand-name">Walk<small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
+			</a>
+			<span class="spacer"></span>
+			<button id="theme" class="icon-btn" type="button" title="Theme: auto">
+				<i class="ph ph-circle-half"></i>
+			</button>
+			<a class="btn" href="../"><i class="ph-bold ph-play"></i><span>Open Walk</span></a>
+		</header>
+
+		<main class="page">
+			<section class="hero">
+				<h1>Your Superun or DeerRun walking pad, without the PitPat app.</h1>
+				<p class="lead">
+					Walk is a free web page that runs your Superun, DeerRun or other PitPat walking pad from the browser. Big
+					Start, Pause and Stop buttons, an exact speed, and every walk counted. No app to install, no account, and
+					your walks never leave your device.
+				</p>
+				<ul class="pluses">
+					<li><i class="ph-bold ph-check"></i>No app to install</li>
+					<li><i class="ph-bold ph-check"></i>No account</li>
+					<li><i class="ph-bold ph-check"></i>Free and open source</li>
+				</ul>
+				<div class="cta">
+					<a class="btn-primary" href="../"><i class="ph-fill ph-play"></i>Open Walk</a>
+					<a class="btn" href="#how"><i class="ph ph-list-numbers"></i>How it works</a>
+				</div>
+			</section>
+
+			<img
+				class="shot"
+				src="../images/home-office.jpg"
+				width="1536"
+				height="1024"
+				alt="A Superun or DeerRun style walking pad under a standing desk, with Walk open on the monitor mid-walk"
+			/>
+
+			<section>
+				<h2>Why use Walk instead of the PitPat app</h2>
+				<ul class="features">
+					<li>
+						<i class="ph ph-device-mobile-slash"></i
+						><span><b>No app to install</b>Nothing from the app store, nothing on your phone. Open the page, connect your Superun or DeerRun pad, and walk. Keep the PitPat app closed, or delete it.</span>
+					</li>
+					<li>
+						<i class="ph ph-lock-simple"></i
+						><span><b>Private by design</b>Your walks stay on your device. No account, no server, no analytics. Export a backup or a spreadsheet anytime.</span>
+					</li>
+					<li>
+						<i class="ph ph-hand-tap"></i
+						><span><b>Controls first</b>Big buttons, an exact speed, one-tap presets and keyboard shortcuts.</span>
+					</li>
+					<li>
+						<i class="ph ph-footprints"></i
+						><span><b>Every step counted</b>Speed, distance, time, steps and calories, kept through pauses and dropped connections.</span>
+					</li>
+					<li>
+						<i class="ph ph-chart-bar"></i
+						><span><b>See your progress</b>A daily goal, your week, weekly trends, an activity calendar and records.</span>
+					</li>
+					<li>
+						<i class="ph ph-code"></i
+						><span><b>Free and open source</b>No ads, no subscription, no catch. The code is public, so anyone can check what it does.</span>
+					</li>
+				</ul>
+				<div class="phones">
+					<img
+						class="shot"
+						src="../images/phone-light.png"
+						width="1024"
+						height="1870"
+						alt="Walk on an Android phone in light mode, controlling a walking pad at 4.5 km/h"
+						loading="lazy"
+					/>
+					<img
+						class="shot"
+						src="../images/phone-dark.png"
+						width="1024"
+						height="1870"
+						alt="Walk on an Android phone in dark mode, showing the same walk"
+						loading="lazy"
+					/>
+				</div>
+				<figure class="desktop">
+					<div class="browser">
+						<div class="browser-bar" aria-hidden="true">
+							<span class="dots"><i></i><i></i><i></i></span>
+							<span class="url"><i class="ph ph-lock-simple"></i>omrilotan.com/walk</span>
+						</div>
+						<img
+							class="shot"
+							src="../images/desktop.png"
+							width="2560"
+							height="3320"
+							loading="lazy"
+							alt="Walk in a desktop browser: the live walk and controls for a Superun or DeerRun walking pad, today's goal, weekly charts, an activity calendar, recent walks and personal records"
+						/>
+					</div>
+					<figcaption class="muted small">On a computer: the live walk and controls up top, then today's goal, your week, weekly trends, a six-month activity calendar, recent walks and records.</figcaption>
+				</figure>
+			</section>
+
+			<section class="card" id="how">
+				<h2>How to connect your Superun or DeerRun walking pad</h2>
+				<ol class="steps">
+					<li><span>Turn on the pad and close the PitPat app on your phone. The pad connects to one device at a time.</span></li>
+					<li><span>Open <a href="../">Walk</a> in Chrome, Edge or Opera, and press <b>Connect</b>.</span></li>
+					<li><span>Pick your pad from the list.</span></li>
+					<li>
+						<span>Press <b>Start</b> or tap a preset speed. Keyboard: <kbd>Space</kbd> start or pause, <kbd>↑</kbd><kbd>↓</kbd> speed,
+						<kbd>Esc</kbd> stop.</span>
+					</li>
+				</ol>
+			</section>
+
+			<section>
+				<h2>Will it work with my Superun or DeerRun walking pad?</h2>
+				<div class="compat">
+					<div class="card yes">
+						<h3><i class="ph-bold ph-check-circle"></i>Works with</h3>
+						<ul>
+							<li>Superun and DeerRun walking pads, and other pads that use the PitPat app</li>
+							<li>Tested on a PitPat-T01 pad</li>
+							<li>Chrome, Edge or Opera on Windows, macOS, Linux, ChromeOS or Android</li>
+						</ul>
+					</div>
+					<div class="card no">
+						<h3><i class="ph-bold ph-x-circle"></i>Not supported</h3>
+						<ul>
+							<li>iPhone and iPad, in any browser</li>
+							<li>Safari and Firefox</li>
+							<li>Pads that use a different app (for example KingSmith WalkingPad)</li>
+						</ul>
+					</div>
+				</div>
+				<p class="muted small" style="margin-top: 10px">
+					Those browsers don't let websites use Bluetooth. If your pad uses the PitPat app and doesn't show up,
+					<a href="https://github.com/omrilotan/walk/issues">tell me</a>.
+				</p>
+			</section>
+
+			<section class="card">
+				<h2>Superun, DeerRun and PitPat: how they fit together</h2>
+				<p>
+					Superun and DeerRun sell under-desk walking pads that pair with PitPat, a phone app for treadmills. The
+					pads often come with a small remote, but many owners find they need the PitPat app to set up the pad,
+					track walks, or control it when the remote goes missing.
+				</p>
+				<p>
+					Walk speaks the same Bluetooth language as the PitPat app, so it can control these pads directly from a
+					web page. You don't need to install the PitPat app, create an account, or keep your phone nearby. Your
+					walks are saved in your browser, and you can export them anytime.
+				</p>
+			</section>
+
+			<section>
+				<h2>Walk with an AI agent</h2>
+				<p>
+					Walk supports WebMCP, a new browser standard that lets a page offer its controls to an AI assistant in the
+					same browser. Ask it how your week went, to pause for a call, or to pick up the pace. Pause and stop always
+					work right away. Starting the belt is your call: the assistant asks you first, unless you choose to let it
+					start on its own. Chrome only, for now.
+				</p>
+				<img
+					class="shot"
+					src="../images/agent-comic.jpg"
+					width="1536"
+					height="1024"
+					loading="lazy"
+					style="margin-top: 14px"
+					alt="A six-panel stick-figure comic of a walk with an AI agent. 10:40: 'Walk me while I clear email. Easy pace.' The laptop asks 'Start at 3.0 km/h?' Walk asks first, and the walker taps Allow. 11:00: 'Pause for the call.' 'Paused.' 12:32: '400 m to your goal. Eight more minutes?' 'Keep going.' 12:40: 'Stop.' 'Stopped. 5.0 km, saved.' Friday: 'Your goal was hit every day this week. Raise it to 6?' 'Nope.'"
+				/>
+			</section>
+
+			<section class="faq">
+				<h2>Questions</h2>
+				<details>
+					<summary>Can I use my Superun or DeerRun walking pad without the PitPat app?</summary>
+					<p>Yes. Walk talks to the pad directly over Bluetooth, the same way the PitPat app does. Keep the PitPat app closed while you use Walk, because the pad connects to one device at a time.</p>
+				</details>
+				<details>
+					<summary>Is Walk really free? What's the catch?</summary>
+					<p>It's free and open source, in the public domain. It's a hobby project: no ads, no subscription, no account and nothing collected.</p>
+				</details>
+				<details>
+					<summary>Where are my walks stored?</summary>
+					<p>In your browser, on this device only. Clearing the site's data deletes them, so use Export now and then. Import brings a backup back, here or on another computer.</p>
+				</details>
+				<details>
+					<summary>Can I control my Superun or DeerRun walking pad from my phone?</summary>
+					<p>On Android, yes, in Chrome. On iPhone, no: Apple doesn't let websites use Bluetooth.</p>
+				</details>
+				<details>
+					<summary>Walk doesn't find my Superun or DeerRun pad.</summary>
+					<p>Close the PitPat app (or turn off Bluetooth on the phone that runs it), make sure the pad is on, and press Connect again. Walk reconnects by itself after brief drops.</p>
+				</details>
+				<details>
+					<summary>Does it count steps on a Superun or DeerRun walking pad?</summary>
+					<p>Yes, when the pad reports them. Distance, time and calories come from the pad too.</p>
+				</details>
+			</section>
+
+			<section class="card warn">
+				<h2>Stay safe</h2>
+				<p>Walk controls moving equipment. Keep the pad's remote within reach, and step off before starting or changing speed while you test. Use at your own risk.</p>
+			</section>
+
+			<section>
+				<h2>Who made this</h2>
+				<p>
+					I'm <a href="https://omrilotan.com/">Omri Lotan</a>. I wanted to walk at my desk without a phone app in
+					the way, so I built Walk. It stands on the protocol work of
+					<a href="https://github.com/KeiranY/PitPat-WebBT">PitPat-WebBT</a>,
+					<a href="https://github.com/Razzolate99/pitpat-treadmill">pitpat-treadmill</a> and
+					<a href="https://github.com/peteh/pacekeeper">pacekeeper</a>. The code is on
+					<a href="https://github.com/omrilotan/walk">GitHub</a>.
+				</p>
+				<div class="cta" style="margin-top: 16px">
+					<a class="btn-primary" href="../"><i class="ph-fill ph-play"></i>Open Walk</a>
+				</div>
+			</section>
+
+			<footer class="foot muted small">
+				<span>Free and open source, in the public domain.</span>
+				<span>Not affiliated with or endorsed by PitPat, Superun or DeerRun.</span>
+			</footer>
+		</main>
+		<script>
+			const themes = ["auto", "light", "dark"];
+			const icons = { auto: "ph-circle-half", light: "ph-sun", dark: "ph-moon" };
+			const button = document.getElementById("theme");
+			const current = () => {
+				try {
+					return localStorage.getItem("walk:theme") || "auto";
+				} catch {
+					return "auto";
+				}
+			};
+			function apply(theme) {
+				if (theme === "auto") delete document.documentElement.dataset.theme;
+				else document.documentElement.dataset.theme = theme;
+				button.title = `Theme: ${theme}`;
+				button.querySelector("i").className = `ph ${icons[theme]}`;
+				try {
+					localStorage.setItem("walk:theme", theme);
+				} catch {}
+			}
+			apply(current());
+			button.addEventListener("click", () => apply(themes[(themes.indexOf(current()) + 1) % themes.length]));
+		</script>
+	</body>
+</html>

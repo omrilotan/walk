@@ -1315,6 +1315,11 @@ body[data-state="starting"] #speed-now {
 	border-color: var(--accent);
 }
 
+.about-source {
+	width: 100%;
+	margin-bottom: 12px;
+}
+
 .about-link:hover {
 	background: var(--accent-hover);
 	border-color: var(--accent-hover);

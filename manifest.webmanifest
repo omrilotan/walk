@@ -1,7 +1,7 @@
 {
 	"name": "Walk",
 	"short_name": "Walk",
-	"description": "Control and track your PitPat walking pad. Works with PitPat walking pads; not affiliated with PitPat.",
+	"description": "Control and track your Superun, DeerRun or other PitPat walking pad. Not affiliated with PitPat, Superun or DeerRun.",
 	"start_url": "./",
 	"display": "standalone",
 	"background_color": "#f4f5f5",

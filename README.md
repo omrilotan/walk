@@ -1,10 +1,10 @@
 # Walk
 
-**Control your walking pad from the browser. Works with PitPat walking pads.**
+**Control your walking pad from the browser. Works with Superun, DeerRun and other PitPat walking pads, no PitPat app needed.**
 
 ![A walking pad under a standing desk, with Walk open on the monitor mid-walk](images/home-office.jpg)
 
-**Try it: [omrilotan.com/walk](https://omrilotan.com/walk/)**
+**Try it: [omrilotan.com/walk](https://omrilotan.com/walk/)** · [About Walk](https://omrilotan.com/walk/about/)
 
 Open the page, press Connect, and walk. Start, pause, stop and set your speed with one tap, and see every walk you've taken. Nothing to install, no account, nothing sent anywhere.
 
@@ -33,7 +33,7 @@ Everything at a glance: the live walk and controls up top, then today's goal, yo
 
 ## What you need
 
-- A PitPat walking pad.
+- A Superun, DeerRun or other walking pad that uses the PitPat app.
 - **Chrome, Edge or Opera** on a computer or an Android phone.
 
 Not supported: iPhone and iPad, Safari, and Firefox. These browsers don't allow websites to use Bluetooth.
@@ -98,7 +98,7 @@ Built on the protocol work of [PitPat-WebBT](https://github.com/KeiranY/PitPat-W
 
 ## Disclaimer
 
-Walk is an independent project, not affiliated with or endorsed by PitPat. PitPat is a trademark of its respective owner, used only to describe compatibility.
+Walk is an independent project, not affiliated with or endorsed by PitPat, Superun or DeerRun. These are trademarks of their respective owners, used only to describe compatibility.
 
 ## License
 

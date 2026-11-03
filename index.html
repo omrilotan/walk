@@ -5,10 +5,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="theme-color" content="#f4f5f5" media="(prefers-color-scheme: light)" />
 		<meta name="theme-color" content="#101413" media="(prefers-color-scheme: dark)" />
-		<title>Walk: walking pad controller in your browser (works with PitPat)</title>
+		<title>Walk: Superun & DeerRun walking pad controller in your browser (PitPat)</title>
 		<meta
 			name="description"
-			content="Free walking pad app for your browser. Start, pause and set speed with one tap, and track distance, time, steps and calories for every walk. No install, no account, private by design. Works with PitPat walking pads."
+			content="Free walking pad app for your browser. Control your Superun or DeerRun walking pad without the PitPat app: start, pause and set speed with one tap, and track distance, time, steps and calories for every walk. No install, no account, private by design."
 		/>
 		<meta name="author" content="Omri Lotan" />
 		<meta name="robots" content="index, follow" />
@@ -21,7 +21,7 @@
 		<meta property="og:title" content="Walk: control your walking pad from the browser" />
 		<meta
 			property="og:description"
-			content="Start, pause and set speed with one tap, and track every walk. No install, no account, private by design. Works with PitPat walking pads."
+			content="Start, pause and set speed with one tap, and track every walk. No install, no account, private by design. Works with Superun, DeerRun and other PitPat walking pads."
 		/>
 		<meta property="og:image" content="https://omrilotan.com/walk/images/home-office.jpg" />
 		<meta property="og:image:type" content="image/jpeg" />
@@ -33,7 +33,7 @@
 		<meta name="twitter:title" content="Walk: control your walking pad from the browser" />
 		<meta
 			name="twitter:description"
-			content="Start, pause and set speed with one tap, and track every walk. Private by design. Works with PitPat walking pads."
+			content="Start, pause and set speed with one tap, and track every walk. Private by design. Works with Superun, DeerRun and other PitPat walking pads."
 		/>
 		<meta name="twitter:image" content="https://omrilotan.com/walk/images/home-office.jpg" />
 		<meta name="twitter:image:alt" content="A walking pad under a standing desk, with Walk open on the monitor mid-walk" />
@@ -45,7 +45,8 @@
 				"@type": "WebApplication",
 				"name": "Walk",
 				"url": "https://omrilotan.com/walk/",
-				"description": "Browser app to control a walking pad over Bluetooth and track every walk. Works with PitPat walking pads. Data stays on your device.",
+				"@id": "https://omrilotan.com/walk/#app",
+				"description": "Browser app to control a walking pad over Bluetooth and track every walk. Works with Superun, DeerRun and other PitPat walking pads, without the PitPat app. Data stays on your device.",
 				"applicationCategory": "HealthApplication",
 				"operatingSystem": "Windows, macOS, Linux, ChromeOS, Android",
 				"browserRequirements": "Requires Web Bluetooth: Chrome, Edge or Opera",
@@ -86,7 +87,7 @@
 		<header class="top">
 			<div class="brand">
 				<span class="mark"><i class="ph-bold ph-person-simple-walk"></i></span>
-				<span class="brand-name">Walk<small>Works with PitPat walking pads</small></span>
+				<span class="brand-name">Walk<small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
 			</div>
 			<span class="spacer"></span>
 			<span id="connection" class="status" data-connected="false">
@@ -353,7 +354,10 @@
 				<li><i class="ph ph-robot"></i><span><b>Works with AI agents.</b> Walk supports WebMCP, a new browser standard that lets a web page offer its controls to an AI assistant in the same browser. Ask the assistant how your week went, to pause for a call, or to pick up the pace. It can read your walks, pause, stop and change speed. Starting the belt is your call: it asks you first, unless you choose to let it start on its own. Walk itself still sends nothing anywhere; what the assistant does with what it reads is up to the assistant you use. Chrome only, for now.</span></li>
 				<li><i class="ph ph-warning"></i><span><b>Stay safe.</b> Walk controls moving equipment. Keep the pad's remote within reach.</span></li>
 			</ul>
-			<a class="btn about-link" href="https://github.com/omrilotan/walk" target="_blank" rel="noopener">
+			<a class="btn about-link" href="about/">
+				<i class="ph-bold ph-book-open"></i><span>More about Walk</span>
+			</a>
+			<a class="btn about-source" href="https://github.com/omrilotan/walk" target="_blank" rel="noopener">
 				<i class="ph-bold ph-github-logo"></i><span>Source on GitHub</span>
 			</a>
 			<p class="muted small">Free and open source, in the public domain. Not affiliated with or endorsed by PitPat.</p>
