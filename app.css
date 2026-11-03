@@ -1491,3 +1491,52 @@ kbd {
 		grid-column: 2;
 	}
 }
+
+/* ---------------------------------------------------------------- agents */
+
+.agent {
+	display: grid;
+	gap: 10px;
+}
+
+.agent-mode {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.agent-mode select {
+	height: 32px;
+	padding: 0 8px;
+	font: inherit;
+	font-size: 13px;
+	color: var(--text);
+	background: var(--surface);
+	border: 1px solid var(--line);
+}
+
+.agent-ask {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	background: var(--accent-soft);
+	border: 1px solid var(--accent);
+}
+
+.agent[hidden],
+.agent-ask[hidden] {
+	display: none;
+}
+
+.agent-ask p {
+	flex: 1 1 220px;
+	font-weight: 600;
+}
+
+.agent-ask .btn-primary {
+	height: 36px;
+	padding: 0 16px;
+}

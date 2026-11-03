@@ -186,6 +186,21 @@
 							<i class="ph-bold ph-plus"></i>Save current
 						</button>
 					</div>
+
+					<div id="agent" class="agent" hidden>
+						<label class="agent-mode">
+							<span class="label"><i class="ph ph-robot"></i>When an agent starts the belt</span>
+							<select id="agent-start">
+								<option value="ask">Ask me first</option>
+								<option value="auto">Start right away</option>
+							</select>
+						</label>
+						<div id="agent-ask" class="agent-ask" role="alertdialog" aria-labelledby="agent-ask-text" hidden>
+							<p id="agent-ask-text"></p>
+							<button id="agent-allow" class="btn-primary" type="button">Allow</button>
+							<button id="agent-deny" class="btn" type="button">Deny</button>
+						</div>
+					</div>
 				</div>
 			</section>
 
@@ -335,6 +350,7 @@
 				<li><i class="ph ph-lightning"></i><span><b>Instant.</b> No app store and no sign-up. It runs in your browser.</span></li>
 				<li><i class="ph ph-download-simple"></i><span><b>Your data is yours.</b> Clearing your browser's site data deletes your walks, so export a backup now and then. Import it on this device or another one.</span></li>
 				<li><i class="ph ph-browser"></i><span><b>Chrome, Edge or Opera</b> on a computer or an Android phone. iPhone, iPad, Safari and Firefox don't allow websites to use Bluetooth.</span></li>
+				<li><i class="ph ph-robot"></i><span><b>Works with AI agents.</b> Walk supports WebMCP, a new browser standard that lets a web page offer its controls to an AI assistant in the same browser. Ask the assistant how your week went, to pause for a call, or to pick up the pace. It can read your walks, pause, stop and change speed. Starting the belt is your call: it asks you first, unless you choose to let it start on its own. Walk itself still sends nothing anywhere; what the assistant does with what it reads is up to the assistant you use. Chrome only, for now.</span></li>
 				<li><i class="ph ph-warning"></i><span><b>Stay safe.</b> Walk controls moving equipment. Keep the pad's remote within reach.</span></li>
 			</ul>
 			<a class="btn about-link" href="https://github.com/omrilotan/walk" target="_blank" rel="noopener">

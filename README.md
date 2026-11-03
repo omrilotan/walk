@@ -21,6 +21,7 @@ Open the page, press Connect, and walk. Start, pause, stop and set your speed wi
 - **Every step counted.** Speed, distance, time, steps and calories for every walk, kept safe through pauses and dropped connections.
 - **See your progress.** A daily goal, your week at a glance, weekly trends, an activity calendar and personal records.
 - **Your data is yours.** Export a backup or a spreadsheet anytime, and import it on another computer.
+- **Works with AI agents.** Walk supports WebMCP, so an AI assistant in your browser can check your walks and help run the pad, with you in charge of starting it.
 - **Light and dark.** Follows your device, or pick one.
 - **Free and open source.**
 
@@ -45,6 +46,43 @@ Not supported: iPhone and iPad, Safari, and Firefox. These browsers don't allow 
 4. Press **Start**, or tap a preset speed.
 
 Keyboard: <kbd>Space</kbd> start or pause, <kbd>↑</kbd> <kbd>↓</kbd> change speed, <kbd>Esc</kbd> stop.
+
+## Use it with an AI agent
+
+Walk supports [WebMCP](https://developer.chrome.com/docs/ai/webmcp/imperative-api), a new web standard that lets a page offer its features to an AI agent running in the same browser. The agent calls Walk's own controls directly, rather than guessing at buttons on the screen.
+
+### A walk with an agent
+
+![A six-panel stick-figure comic of a walk with an AI agent. 10:40: "Walk me while I clear email. Easy pace." The laptop asks "Start at 3.0 km/h?" Walk asks first: the screen reads "An agent wants to start the belt at 3.0 km/h" and the walker taps Allow. 11:00: the phone rings, "Pause for the call." "Paused." 12:32: the laptop asks "400 m to your goal. Eight more minutes?" and the walker answers "Keep going." 12:40: arms up, "Stop." "Stopped. 5.0 km, saved." Friday, coffee in hand: the laptop asks "Your goal was hit every day this week. Raise it to 6?" and the walker answers "Nope."](images/agent-comic.jpg)
+
+<details>
+<summary>Read the story as text</summary>
+
+It's 10:40. The pad is under the standing desk and Walk is open and connected. You type to the browser's assistant: *"Walk me while I clear email. Easy pace."*
+
+The assistant checks the pad (connected, stopped) and your goal (5 km). It suggests 3 km/h, and a bar appears in Walk: **"An agent wants to start the belt at 3.0 km/h. Allow / Deny."** You tap Allow and the belt starts.
+
+At 11:00, 1 km in, a call comes in. *"Pause for the call."* The belt pauses at once, no questions asked. The call ends at 11:20: *"Back on."* The assistant asks to resume at 3 km/h, you tap Allow, and you're walking again.
+
+At 12:32 you're at 4.6 km: *"400 m to your goal. Eight more minutes?"* You keep going. At 12:40 you hit 5 km. *"Stop."* The belt stops, and the walk is saved to your history like any other.
+
+On Friday the assistant sums up the week: *"Your goal was hit every day this week. Raise it to 6?"* That's a settings change, so it asks, and you say no.
+
+</details>
+
+The agent works **for** you on the reading, summing up and timing. It works **with** you on anything that moves you: you decide when the belt starts.
+
+### What an agent can do
+
+- Read the pad's status, today's progress toward your goal, your week, records and recent walks.
+- Pause and stop the belt. These always work right away.
+- Change speed while you walk, by at most 1 km/h per step.
+- Start or resume the belt. You choose how, under the presets: **Ask me first** (the default) shows an Allow / Deny bar and waits up to a minute for your tap, while **Start right away** lets the agent start on its own.
+- Change your daily goal.
+
+An agent cannot connect the pad; you press Connect yourself. Walk itself still sends nothing anywhere: your walks stay on your device, and what the assistant does with what it reads is up to the assistant you use.
+
+WebMCP is new and available in Chrome only. In other browsers the agent option doesn't appear and Walk works as before.
 
 ## Your data
 

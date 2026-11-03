@@ -4,6 +4,7 @@ import { areaChart, barChart, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
 import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
+import { registerAgentTools } from "./agent.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -32,6 +33,8 @@ const ui = {
 	spark: [],
 	sparkAt: 0,
 	dashAt: 0,
+	status: null, // last status from the pad
+	startMode: "ask", // agent starts: "ask" or "auto"
 };
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -151,6 +154,7 @@ function renderControls() {
 }
 
 function renderLive({ status, session }) {
+	ui.status = status;
 	if (status.state !== ui.state) {
 		ui.state = status.state;
 		renderState();
@@ -440,6 +444,78 @@ function onKey(event) {
 	handler();
 }
 
+// ---------------------------------------------------------------- agents (WebMCP)
+
+const r2 = (n) => Math.round(n * 100) / 100;
+const walkTotals = (t) => ({
+	distanceKm: r2(t.distance),
+	seconds: Math.round(t.seconds),
+	steps: t.steps,
+	calories: t.calories,
+});
+const walkInfo = (s) =>
+	s && {
+		start: new Date(s.start).toISOString(),
+		end: s.end ? new Date(s.end).toISOString() : null,
+		...walkTotals(s.totals),
+		topSpeed: s.maxSpeed,
+	};
+const dayInfo = (d) => ({ ...walkTotals(d), walks: d.walks });
+
+const agentSurface = {
+	status: () => ({
+		connected: pad.connected,
+		pad: pad.connected ? pad.device?.name ?? null : null,
+		state: pad.connected ? ui.state : "offline",
+		speed: ui.status?.speed ?? 0,
+		target: ui.target,
+		minSpeed: MIN_SPEED,
+		maxSpeed: ui.maxSpeed,
+		currentWalk: tracker.session ? walkInfo(tracker.session) : null,
+		startNeedsApproval: ui.startMode === "ask",
+	}),
+	summary: () => {
+		const others = ui.sessions.filter((s) => s.id !== tracker.session?.id);
+		const s = summarize(tracker.session ? [tracker.session, ...others] : others);
+		return {
+			today: dayInfo(s.today),
+			goalKm: ui.goal,
+			goalProgress: r2(s.today.distance / ui.goal),
+			yesterday: dayInfo(s.yesterday),
+			thisWeek: dayInfo(s.thisWeek),
+			changeVersusLastWeek: s.weekDelta === null ? null : r2(s.weekDelta),
+			streakDays: s.streak,
+			activeDaysLast30: s.activeDays30,
+			lifetime: dayInfo(s.lifetime),
+			records: {
+				longestDistance: walkInfo(s.records.longest),
+				longestTime: walkInfo(s.records.longestTime),
+				fastest: walkInfo(s.records.fastest),
+			},
+		};
+	},
+	recentWalks: (limit) => ui.sessions.slice(0, limit).map(walkInfo),
+	start: (kmh) => {
+		setTarget(kmh);
+		pad.start(ui.target);
+	},
+	setSpeed: (kmh) => setTarget(kmh, { send: true }),
+	setTarget: (kmh) => setTarget(kmh),
+	pause: () => pad.pause(),
+	stop: () => pad.stop(),
+	setGoal: async (km) => {
+		ui.goal = km;
+		$("#goal").value = km;
+		await setSetting("goal", km);
+		renderDashboard(ui.sessions);
+	},
+	getStartMode: () => ui.startMode,
+	setStartMode: (mode) => {
+		ui.startMode = mode === "auto" ? "auto" : "ask";
+		setSetting("agentStart", ui.startMode);
+	},
+};
+
 // ---------------------------------------------------------------- init
 
 async function init() {
@@ -454,6 +530,7 @@ async function init() {
 
 	ui.presets = await getSetting("presets", DEFAULT_PRESETS);
 	ui.goal = await getSetting("goal", 5);
+	ui.startMode = await getSetting("agentStart", "ask");
 	$("#goal").value = ui.goal;
 	setTarget(await getSetting("target", 3));
 	await tracker.finishStale();
@@ -509,6 +586,7 @@ async function init() {
 	}, 60000);
 
 	pad.reconnect().catch(() => {});
+	registerAgentTools(agentSurface).catch((error) => console.warn("Walk: agent tools unavailable", error));
 }
 
 init();
