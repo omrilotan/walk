@@ -131,7 +131,7 @@ export function createServer(env: Env, props: Props): McpServer {
 			description:
 				"The user's walking stats: today (distance, minutes, steps, calories, walks), the daily goal in km and progress toward it, yesterday, this week (Monday to today) and the change versus the same days last week, the current streak in days, active days in the last 30, lifetime totals, personal records, and the last walk.",
 			inputSchema: z.object({}),
-			annotations: { readOnlyHint: true, openWorldHint: false },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 		},
 		async () => {
 			const data = await load();
@@ -169,7 +169,7 @@ export function createServer(env: Env, props: Props): McpServer {
 			inputSchema: z.object({
 				days: z.number().int().min(1).max(366).default(14).describe("How many days, ending today. Default 14."),
 			}),
-			annotations: { readOnlyHint: true, openWorldHint: false },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 		},
 		async ({ days }) => {
 			const data = await load();
@@ -208,7 +208,7 @@ export function createServer(env: Env, props: Props): McpServer {
 				to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Last day, YYYY-MM-DD."),
 				limit: z.number().int().min(1).max(200).default(20).describe("At most this many. Default 20."),
 			}),
-			annotations: { readOnlyHint: true, openWorldHint: false },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 		},
 		async ({ from, to, limit }) => {
 			const data = await load();
