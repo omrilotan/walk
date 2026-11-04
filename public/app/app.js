@@ -5,6 +5,8 @@ import { clock, fmt, int, km, minutes } from "./format.js";
 import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
 import { registerAgentTools } from "./agent.js";
+import { checkAccount, currentAccount as account, recordDeletion, resetAll, signedIn, sync } from "./sync.js";
+import { api, enterCode, requestCode, signOut } from "./auth.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -45,15 +47,12 @@ function message(text) {
 
 // ---------------------------------------------------------------- theme
 
-const THEMES = ["auto", "light", "dark"];
-const THEME_ICONS = { auto: "ph-circle-half", light: "ph-sun", dark: "ph-moon" };
-
 function applyTheme(theme) {
 	if (theme === "auto") delete document.documentElement.dataset.theme;
 	else document.documentElement.dataset.theme = theme;
-	const button = $("#theme");
-	button.title = `Theme: ${theme}`;
-	button.querySelector("i").className = `ph ${THEME_ICONS[theme]}`;
+	for (const choice of document.querySelectorAll("[data-theme-choice]")) {
+		choice.setAttribute("aria-checked", String(choice.dataset.themeChoice === theme));
+	}
 	try {
 		localStorage.setItem("walk:theme", theme);
 	} catch {}
@@ -120,12 +119,12 @@ async function savePresets(presets) {
 // ---------------------------------------------------------------- live panel
 
 function renderConnection(connected) {
-	const chip = $("#connection");
-	chip.dataset.connected = String(connected);
-	chip.querySelector("i").className = connected ? "ph-bold ph-bluetooth-connected" : "ph-bold ph-bluetooth-slash";
-	chip.querySelector("span").textContent = connected ? pad.device?.name ?? "Connected" : "Not connected";
-	$("#connect").dataset.connected = String(connected);
-	$("#connect").querySelector("span").textContent = connected ? "Disconnect" : "Connect";
+	const button = $("#connect");
+	delete button.dataset.confirm;
+	button.dataset.connected = String(connected);
+	button.querySelector("i").className = connected ? "ph-bold ph-bluetooth-connected" : "ph-bold ph-bluetooth";
+	button.querySelector("span").textContent = connected ? pad.device?.name ?? "Connected" : "Connect";
+	button.title = connected ? "Connected. Click twice to disconnect" : "Connect your walking pad";
 	if (!connected) {
 		ui.state = "offline";
 		renderState();
@@ -287,7 +286,7 @@ function renderDashboard(sessions) {
 function renderRecords(s) {
 	const { longest, longestTime, fastest } = s.records;
 	const rows = [
-		["Lifetime distance", `${km(s.lifetime.distance)} km`, `${int.format(s.lifetime.walks)} walks`],
+		["Lifetime distance", `${km(s.lifetime.distance)} km`, `${int.format(s.lifetime.walks)} ${s.lifetime.walks === 1 ? "walk" : "walks"}`],
 		["Lifetime time", minutes(s.lifetime.seconds), `${int.format(s.lifetime.calories)} kcal`],
 		["Current streak", `${s.streak} ${s.streak === 1 ? "day" : "days"}`, "consecutive days walked"],
 		["Longest walk", longest ? `${km(longest.totals.distance)} km` : "-", longest ? fmt.date.format(longest.start) : ""],
@@ -346,8 +345,10 @@ function renderHistory(sessions) {
 				}, 3000);
 				return;
 			}
+			await recordDeletion(session);
 			await deleteSession(session.id);
 			loadSessions();
+			syncNow();
 		});
 		item.append(remove);
 		list.append(item);
@@ -396,8 +397,242 @@ async function importHistory(file) {
 		const result = await importAll(JSON.parse(await file.text()));
 		message(`Imported: ${result.added} new, ${result.updated} updated, ${result.skipped} already here.`);
 		await loadSessions();
+		syncNow();
 	} catch (error) {
 		message(`Import failed: ${error.message}`);
+	}
+}
+
+// ---------------------------------------------------------------- account dialog
+
+const shortDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+
+function accountError(error) {
+	$("#acct-error").textContent = error?.message ?? "";
+}
+
+async function openAccount() {
+	accountError();
+	if (signedIn()) await checkAccount(); // fresh counts
+	await renderAccountDialog();
+	$("#account-dialog").showModal();
+	if (!signedIn()) ($("#acct-code-form").hidden ? $("#acct-email") : $("#acct-code")).focus();
+}
+
+async function renderAccountDialog() {
+	const me = account();
+	$("#acct-out").hidden = Boolean(me);
+	$("#acct-in").hidden = !me;
+	if (!me) return;
+	$("#acct-who").textContent = me.email;
+	$("#acct-status").textContent = `${int.format(me.walks)} ${me.walks === 1 ? "walk" : "walks"} synced.`;
+	await renderAssistants().catch(accountError);
+}
+
+async function renderAssistants() {
+	const { assistants } = await api("/api/me/assistants");
+	const list = $("#acct-assistants");
+	list.innerHTML = "";
+	$("#acct-none").hidden = assistants.length > 0;
+	for (const assistant of assistants) {
+		const row = document.createElement("div");
+		row.className = "acct-row";
+		const label = document.createElement("span");
+		const name = document.createElement("b");
+		name.textContent = assistant.name;
+		const note = document.createElement("small");
+		note.textContent = `Connected ${shortDate.format(assistant.connected * 1000)}, ${assistant.scopes.includes("goal") ? "can change your goal" : "read only"}`;
+		label.append(name, note);
+		const button = document.createElement("button");
+		button.className = "btn";
+		button.type = "button";
+		button.textContent = "Disconnect";
+		button.addEventListener("click", async () => {
+			button.disabled = true;
+			await api(`/api/me/assistants/${encodeURIComponent(assistant.id)}`, { method: "DELETE" }).catch(accountError);
+			renderAssistants().catch(accountError);
+		});
+		row.append(label, button);
+		list.append(row);
+	}
+}
+
+/** Signed in or out: refresh the account, the menu row and the dialog. */
+async function afterAccountChange() {
+	if (await checkAccount()) {
+		await syncNow();
+		await checkAccount(); // fresh counts after the first sync
+	} else renderAccount("off");
+	await renderAccountDialog();
+}
+
+function wireAccount() {
+	const dialog = $("#account-dialog");
+	dialog.addEventListener("click", (event) => {
+		if (event.target === event.currentTarget) dialog.close(); // backdrop
+	});
+
+	$("#acct-email-form").addEventListener("submit", async (event) => {
+		event.preventDefault();
+		const button = event.submitter;
+		button.disabled = true;
+		accountError();
+		try {
+			const email = $("#acct-email").value.trim();
+			const result = await requestCode(email, $("#acct-consent").checked);
+			$("#acct-sent-to").textContent = email;
+			$("#acct-email-form").hidden = true;
+			$("#acct-code-form").hidden = false;
+			if (result.debugCode) $("#acct-code").value = result.debugCode; // local development only
+			$("#acct-code").focus();
+		} catch (error) {
+			accountError(error);
+		} finally {
+			button.disabled = false;
+		}
+	});
+
+	$("#acct-code-form").addEventListener("submit", async (event) => {
+		event.preventDefault();
+		const button = event.submitter;
+		button.disabled = true;
+		accountError();
+		try {
+			await enterCode($("#acct-code").value);
+			$("#acct-code").value = "";
+			$("#acct-code-form").hidden = true;
+			$("#acct-email-form").hidden = false;
+			await afterAccountChange();
+		} catch (error) {
+			accountError(error);
+		} finally {
+			button.disabled = false;
+		}
+	});
+
+	$("#acct-again").addEventListener("click", () => {
+		$("#acct-code-form").hidden = true;
+		$("#acct-email-form").hidden = false;
+		$("#acct-email").focus();
+	});
+
+	$("#acct-sync").addEventListener("click", async () => {
+		await syncNow();
+		await checkAccount();
+		renderAccountDialog();
+	});
+
+	$("#acct-agent").addEventListener("click", () => {
+		dialog.close();
+		openAgent();
+	});
+
+	$("#acct-signout").addEventListener("click", async () => {
+		await signOut().catch(accountError);
+		await afterAccountChange();
+	});
+
+	const remove = $("#acct-delete");
+	remove.addEventListener("click", async () => {
+		if (!remove.dataset.confirm) {
+			remove.dataset.confirm = "1";
+			remove.textContent = "Tap again to delete";
+			setTimeout(() => {
+				delete remove.dataset.confirm;
+				remove.textContent = "Delete account";
+			}, 5000);
+			return;
+		}
+		remove.disabled = true;
+		try {
+			await api("/api/me", { method: "DELETE" });
+			await afterAccountChange();
+		} catch (error) {
+			accountError(error);
+		} finally {
+			delete remove.dataset.confirm;
+			remove.textContent = "Delete account";
+			remove.disabled = false;
+		}
+	});
+}
+
+// ---------------------------------------------------------------- agent dialog
+
+const mcpAddress = () => account()?.mcp ?? `${location.origin}/mcp`;
+
+/** How to connect an AI agent: remote MCP (needs sync) or WebMCP (this browser). */
+function openAgent() {
+	const address = mcpAddress();
+	$("#agent-mcp").textContent = address.replace(/^https?:\/\//, "");
+	$("#agent-cli").textContent = `claude mcp add --transport http walk ${address}`;
+	const step = $("#agent-step-sync");
+	if (signedIn()) {
+		step.textContent = `Cloud sync is on, as ${account().email}. Your assistant reads walks from there.`;
+	} else {
+		step.innerHTML = "";
+		const button = document.createElement("button");
+		button.className = "linkish";
+		button.type = "button";
+		button.textContent = "sign in";
+		button.addEventListener("click", () => {
+			$("#agent-dialog").close();
+			openAccount();
+		});
+		step.append("Turn on cloud sync: ", button, ". Your assistant reads walks from there.");
+	}
+	$("#agent-start").value = ui.startMode;
+	$("#agent-dialog").showModal();
+}
+
+function wireAgent() {
+	const dialog = $("#agent-dialog");
+	dialog.addEventListener("click", (event) => {
+		if (event.target === event.currentTarget) dialog.close(); // backdrop
+	});
+	$("#agent-start").addEventListener("change", (event) => agentSurface.setStartMode(event.target.value));
+	const chip = $("#agent-copy");
+	chip.addEventListener("click", async () => {
+		const icon = chip.querySelector("i");
+		try {
+			await navigator.clipboard.writeText(mcpAddress());
+			icon.className = "ph-bold ph-check";
+			chip.title = "Copied";
+			setTimeout(() => {
+				icon.className = "ph-bold ph-copy";
+				chip.title = "Copy to clipboard";
+			}, 1600);
+		} catch {
+			getSelection().selectAllChildren($("#agent-mcp"));
+		}
+	});
+}
+
+// ---------------------------------------------------------------- reset
+
+function openReset() {
+	if (tracker.session) return message("Stop the walk before resetting.");
+	const count = ui.sessions.length;
+	const walks = `${int.format(count)} ${count === 1 ? "walk" : "walks"}`;
+	$("#reset-text").textContent = signedIn()
+		? `This deletes all your walks: the ${walks} in this browser, every walk in your Walk account, and the copies in your other signed-in browsers when they next sync.`
+		: `This deletes the ${walks} saved in this browser, with their per-second readings.`;
+	$("#reset-error").textContent = "";
+	$("#reset-confirm").disabled = false;
+	$("#reset-dialog").showModal();
+}
+
+async function confirmReset() {
+	const button = $("#reset-confirm");
+	button.disabled = true;
+	try {
+		await resetAll();
+		$("#reset-dialog").close();
+		await loadSessions();
+		message("All walks deleted.");
+	} catch (error) {
+		$("#reset-error").textContent = error.message;
+		button.disabled = false;
 	}
 }
 
@@ -415,7 +650,21 @@ function guarded(fn) {
 
 const actions = {
 	async connect() {
-		if (pad.connected) return pad.disconnect();
+		const button = $("#connect");
+		if (pad.connected) {
+			// Disconnecting ends control of a moving belt: ask once more.
+			if (!button.dataset.confirm) {
+				button.dataset.confirm = "1";
+				button.querySelector("span").textContent = "Disconnect?";
+				setTimeout(() => {
+					if (!button.dataset.confirm) return;
+					delete button.dataset.confirm;
+					renderConnection(pad.connected);
+				}, 3000);
+				return;
+			}
+			return pad.disconnect();
+		}
 		try {
 			await pad.pick();
 		} catch (error) {
@@ -506,7 +755,7 @@ const agentSurface = {
 	setGoal: async (km) => {
 		ui.goal = km;
 		$("#goal").value = km;
-		await setSetting("goal", km);
+		await saveGoal(km);
 		renderDashboard(ui.sessions);
 	},
 	getStartMode: () => ui.startMode,
@@ -515,6 +764,58 @@ const agentSurface = {
 		setSetting("agentStart", ui.startMode);
 	},
 };
+
+// ---------------------------------------------------------------- sync
+
+async function saveGoal(km) {
+	await setSetting("goal", km);
+	await setSetting("goalUpdated", Date.now());
+	syncNow();
+}
+
+const timeOfDay = new Intl.DateTimeFormat(undefined, { timeStyle: "short" });
+
+/** The sync row in the menu, and a dot on the menu button when sync failed. */
+function renderAccount(state) {
+	const icons = { off: "ph-cloud-slash", synced: "ph-cloud-check", syncing: "ph-cloud-arrow-up", failed: "ph-cloud-warning", offline: "ph-cloud-x" };
+	const email = account()?.email ?? "";
+	const titles = { off: "Sync and assistants", synced: "Synced", syncing: "Syncing…", failed: "Sync failed", offline: "Offline" };
+	const notes = {
+		off: "Sign in to sync your walks and connect an AI assistant",
+		synced: `${email}, ${timeOfDay.format(new Date())}. Account and assistants`,
+		syncing: email,
+		failed: `${email}. Try again, or open your account`,
+		offline: `${email}. Syncs when you're back online`,
+	};
+	$("#menu-sync-icon").className = `ph ${icons[state]}`;
+	$("#menu-sync-title").textContent = titles[state];
+	$("#menu-sync-note").textContent = notes[state];
+	$("#menu-sync-now").hidden = state === "off";
+	$("#menu-account").dataset.state = state;
+	$("#menu-btn").dataset.sync = state;
+}
+
+/** Sync if signed in and online. Never during a walk: the walk syncs when it ends. */
+async function syncNow() {
+	if (!signedIn() || tracker.session) return;
+	if (!navigator.onLine) return renderAccount("offline");
+	renderAccount("syncing");
+	try {
+		const result = await sync();
+		if (!signedIn()) return renderAccount("off");
+		if (result.goal !== null) {
+			ui.goal = result.goal;
+			$("#goal").value = ui.goal;
+		}
+		if (result.walks || result.goal !== null) await loadSessions();
+		renderAccount("synced");
+	} catch (error) {
+		// No connection is not a failure: sync catches up when it's back.
+		if (error instanceof TypeError || !navigator.onLine) return renderAccount("offline");
+		console.warn("Walk: sync failed", error);
+		renderAccount("failed");
+	}
+}
 
 // ---------------------------------------------------------------- init
 
@@ -544,16 +845,31 @@ async function init() {
 		ui.spark = [];
 		renderSpark();
 		loadSessions();
+		syncNow();
 	});
 
+	const menu = $("#menu");
+	$("#menu-btn").addEventListener("click", () => menu.showModal());
+	for (const dialog of [menu, $("#about"), $("#reset-dialog")]) {
+		dialog.addEventListener("click", (event) => {
+			if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
+		});
+	}
+	// Every menu action closes the menu; the theme stays open to compare.
+	menu.addEventListener("click", (event) => {
+		// Import waits for its file: closing now could drop the file picker.
+		const item = event.target.closest(".menu-item");
+		if (item && item.tagName !== "LABEL") menu.close();
+	});
+	for (const choice of document.querySelectorAll("[data-theme-choice]")) {
+		choice.addEventListener("click", () => applyTheme(choice.dataset.themeChoice));
+	}
 	$("#info").addEventListener("click", () => $("#about").showModal());
-	$("#about").addEventListener("click", (event) => {
-		if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
-	});
-	$("#theme").addEventListener("click", () => {
-		const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
-		applyTheme(next);
-	});
+	$("#menu-sync-now").addEventListener("click", syncNow);
+	$("#menu-account").addEventListener("click", openAccount);
+	$("#menu-agent").addEventListener("click", openAgent);
+	wireAccount();
+	wireAgent();
 	$("#connect").addEventListener("click", actions.connect);
 	$("#start").addEventListener("click", actions.start);
 	$("#pause").addEventListener("click", actions.pause);
@@ -567,13 +883,18 @@ async function init() {
 	$("#save-preset").addEventListener("click", () => savePresets([...ui.presets, ui.target]));
 	$("#goal").addEventListener("change", async () => {
 		ui.goal = Math.max(0.5, Number($("#goal").value) || 5);
-		await setSetting("goal", ui.goal);
+		await saveGoal(ui.goal);
 		renderDashboard(ui.sessions);
 	});
 	$("#export").addEventListener("click", exportHistory);
+	$("#reset").addEventListener("click", openReset);
+	$("#reset-cancel").addEventListener("click", () => $("#reset-dialog").close());
+	$("#reset-export").addEventListener("click", exportHistory);
+	$("#reset-confirm").addEventListener("click", confirmReset);
 	$("#export-csv").addEventListener("click", exportCsv);
 	$("#import").addEventListener("change", (event) => {
 		const [file] = event.target.files;
+		menu.close();
 		if (file) importHistory(file);
 		event.target.value = "";
 	});
@@ -586,6 +907,32 @@ async function init() {
 	}, 60000);
 
 	pad.reconnect().catch(() => {});
+
+	// Signing in and managing the account happen in a dialog on this page:
+	// Walk never navigates away, so the pad stays connected.
+	renderAccount("off");
+	const accountChanged = async () => {
+		if (await checkAccount()) syncNow();
+		else renderAccount("off");
+	};
+	await accountChanged();
+	document.addEventListener("visibilitychange", () => {
+		if (document.visibilityState !== "visible") return;
+		if (signedIn()) syncNow();
+		else accountChanged();
+	});
+
+	// Back online: catch up.
+	window.addEventListener("online", () => syncNow());
+
+	// Installed, Walk opens and runs the pad without internet (sw.js).
+	navigator.serviceWorker?.register("/app/sw.js", { scope: "/app/" }).catch((error) => console.warn("Walk: offline support unavailable", error));
+
+	// Leaving or reloading this page drops the Bluetooth connection.
+	window.addEventListener("beforeunload", (event) => {
+		if (pad.connected) event.preventDefault();
+	});
+	setInterval(syncNow, 10 * 60 * 1000);
 	registerAgentTools(agentSurface).catch((error) => console.warn("Walk: agent tools unavailable", error));
 }
 

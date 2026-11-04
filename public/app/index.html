@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="theme-color" content="#f4f5f5" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#101413" media="(prefers-color-scheme: dark)" />
+		<title>Walk: Superun & DeerRun walking pad controller in your browser (PitPat)</title>
+		<meta
+			name="description"
+			content="Free walking pad app for your browser. Control your Superun or DeerRun walking pad without the PitPat app: start, pause and set speed with one tap, and track distance, time, steps and calories for every walk. No install, no account needed, private by design."
+		/>
+		<meta name="author" content="Omri Lotan" />
+		<meta name="robots" content="index, follow" />
+		<link rel="canonical" href="https://walk.omrilotan.com/app/" />
+
+		<!-- Share previews -->
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Walk" />
+		<meta property="og:url" content="https://walk.omrilotan.com/app/" />
+		<meta property="og:title" content="Walk: control your walking pad from the browser" />
+		<meta
+			property="og:description"
+			content="Start, pause and set speed with one tap, and track every walk. No install, no account needed, private by design. Works with Superun, DeerRun and other PitPat walking pads."
+		/>
+		<meta property="og:image" content="https://walk.omrilotan.com/images/home-office.jpg" />
+		<meta property="og:image:type" content="image/jpeg" />
+		<meta property="og:image:width" content="1536" />
+		<meta property="og:image:height" content="1024" />
+		<meta property="og:image:alt" content="A walking pad under a standing desk, with Walk open on the monitor mid-walk" />
+		<meta property="og:locale" content="en_GB" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Walk: control your walking pad from the browser" />
+		<meta
+			name="twitter:description"
+			content="Start, pause and set speed with one tap, and track every walk. Private by design. Works with Superun, DeerRun and other PitPat walking pads."
+		/>
+		<meta name="twitter:image" content="https://walk.omrilotan.com/images/home-office.jpg" />
+		<meta name="twitter:image:alt" content="A walking pad under a standing desk, with Walk open on the monitor mid-walk" />
+
+		<!-- Structured data -->
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "WebApplication",
+				"name": "Walk",
+				"url": "https://walk.omrilotan.com/app/",
+				"@id": "https://walk.omrilotan.com/app/#app",
+				"description": "Browser app to control a walking pad over Bluetooth and track every walk. Works with Superun, DeerRun and other PitPat walking pads, without the PitPat app. Walks stay on your device; syncing is optional.",
+				"applicationCategory": "HealthApplication",
+				"operatingSystem": "Windows, macOS, Linux, ChromeOS, Android",
+				"browserRequirements": "Requires Web Bluetooth: Chrome, Edge or Opera",
+				"isAccessibleForFree": true,
+				"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+				"image": "https://walk.omrilotan.com/images/home-office.jpg",
+				"screenshot": "https://walk.omrilotan.com/images/desktop.png",
+				"featureList": [
+					"Start, pause and stop with one tap",
+					"Exact target speed and speed presets",
+					"Live speed, distance, time, steps and calories",
+					"Daily goal, weekly trends and activity calendar",
+					"JSON and CSV export and import",
+					"Optional sync between browsers",
+					"AI assistants via WebMCP and remote MCP",
+					"Light and dark themes"
+				],
+				"author": { "@type": "Person", "name": "Omri Lotan", "url": "https://omrilotan.com/" }
+			}
+		</script>
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link
+			rel="stylesheet"
+			href="/vendor/phosphor/regular.css"
+		/>
+		<link rel="stylesheet" href="/vendor/phosphor/bold.css" />
+		<link rel="stylesheet" href="/vendor/phosphor/fill.css" />
+		<link rel="stylesheet" href="app.css" />
+		<script src="/theme.js"></script>
+		<script type="module" src="app.js"></script>
+	</head>
+	<body>
+		<header class="top">
+			<div class="brand">
+				<span class="mark"><i class="ph-bold ph-person-simple-walk"></i></span>
+				<span class="brand-name">Walk<small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
+			</div>
+			<span class="spacer"></span>
+			<!-- One button for the pad: Connect when it isn't, the pad's name when it is. -->
+			<button id="connect" class="btn" type="button" data-connected="false" title="Connect your walking pad">
+				<i class="ph-bold ph-bluetooth"></i><span>Connect</span>
+			</button>
+			<button id="menu-btn" class="icon-btn" type="button" title="Menu" aria-label="Menu" aria-haspopup="dialog" data-sync="off">
+				<i class="ph-bold ph-list"></i>
+			</button>
+		</header>
+
+		<p id="unsupported" class="notice" hidden>
+			Web Bluetooth is not available in this browser. Use Chrome or Edge on desktop or Android.
+		</p>
+
+		<main>
+			<section class="intro">
+				<p id="greeting" class="muted"></p>
+				<h1 id="headline">Ready when you are.</h1>
+				<p id="lifetime" class="muted"></p>
+			</section>
+
+			<!-- Live walk: the primary surface -->
+			<section class="card live" aria-label="Current walk">
+				<div class="live-speed">
+					<div class="live-head">
+						<span id="state-pill" class="pill" data-state="offline">Not connected</span>
+						<span id="target-line" class="muted"></span>
+					</div>
+					<div class="speed-big" aria-live="polite">
+						<span id="speed-now">0.0</span><span class="unit">km/h</span>
+					</div>
+					<svg id="spark" class="spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+						<path class="spark-fill" />
+						<path class="spark-line" />
+					</svg>
+				</div>
+
+				<div class="metrics">
+					<div class="metric featured">
+						<span class="label"><i class="ph ph-path"></i>Distance</span>
+						<span class="value"><span id="m-distance">0.00</span><small>km</small></span>
+					</div>
+					<div class="metric">
+						<span class="label"><i class="ph ph-timer"></i>Time</span>
+						<span class="value" id="m-time">0:00</span>
+					</div>
+					<div class="metric">
+						<span class="label"><i class="ph ph-fire"></i>Calories</span>
+						<span class="value"><span id="m-calories">0</span><small>kcal</small></span>
+					</div>
+					<div class="metric">
+						<span class="label"><i class="ph ph-footprints"></i>Steps</span>
+						<span class="value" id="m-steps">0</span>
+					</div>
+				</div>
+
+				<div class="control-band">
+					<div class="transport">
+						<button id="start" class="btn-primary xl" type="button" disabled>
+							<i class="ph-fill ph-play"></i><span>Start</span>
+						</button>
+						<button id="pause" class="btn-soft xl" type="button" disabled>
+							<i class="ph-fill ph-pause"></i><span>Pause</span>
+						</button>
+						<button id="stop" class="btn-soft xl stop" type="button" disabled>
+							<i class="ph-fill ph-stop"></i><span>Stop</span>
+						</button>
+					</div>
+
+					<form id="speed-form" class="speed-control">
+						<label for="speed" class="label">Target speed</label>
+						<div class="stepper">
+							<button type="button" id="slower" class="step" aria-label="Slower by 0.5">
+								<i class="ph-bold ph-minus"></i>
+							</button>
+							<div class="speed-field">
+								<input id="speed" type="number" inputmode="decimal" min="1" max="6" step="0.1" value="3.0" />
+								<span>km/h</span>
+							</div>
+							<button type="button" id="faster" class="step" aria-label="Faster by 0.5">
+								<i class="ph-bold ph-plus"></i>
+							</button>
+							<button type="submit" class="btn-primary set">Set</button>
+						</div>
+					</form>
+
+					<div class="presets-row">
+						<span class="label">Presets</span>
+						<div id="presets" class="chips"></div>
+						<button id="save-preset" class="chip-add" type="button">
+							<i class="ph-bold ph-plus"></i>Save current
+						</button>
+					</div>
+
+					<!-- An agent in this browser asks before starting the belt (agent.js). -->
+					<div id="agent" class="agent" hidden>
+						<div id="agent-ask" class="agent-ask" role="alertdialog" aria-labelledby="agent-ask-text" hidden>
+							<p id="agent-ask-text"></p>
+							<button id="agent-allow" class="btn-primary" type="button">Allow</button>
+							<button id="agent-always" class="btn" type="button" title="Let agents start the belt without asking. Change it in Menu, Connect your AI agent.">Always allow</button>
+							<button id="agent-deny" class="btn" type="button">Deny</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Today -->
+			<section class="card today">
+				<div class="ring-wrap">
+					<p class="card-title" id="today-title">Today</p>
+					<div class="ring">
+						<svg viewBox="0 0 120 120" aria-hidden="true">
+							<circle class="ring-track" cx="60" cy="60" r="52" />
+							<circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52" />
+						</svg>
+						<div class="ring-center">
+							<span class="ring-value"><span id="today-distance">0.00</span><small>km</small></span>
+							<label class="goal">
+								of
+								<input id="goal" type="number" min="0.5" max="50" step="0.5" value="5" aria-label="Daily goal in km" />
+								km goal
+							</label>
+						</div>
+					</div>
+					<p class="muted small" id="yesterday"></p>
+				</div>
+
+				<div class="today-side">
+					<div class="today-stats">
+						<div>
+							<span class="label">Walks</span>
+							<span class="stat" id="today-walks">0</span>
+						</div>
+						<div>
+							<span class="label">Time</span>
+							<span class="stat" id="today-time">0m</span>
+						</div>
+						<div>
+							<span class="label">Calories</span>
+							<span class="stat"><span id="today-calories">0</span><small>kcal</small></span>
+						</div>
+						<div>
+							<span class="label">Steps</span>
+							<span class="stat" id="today-steps">0</span>
+						</div>
+					</div>
+					<div class="week">
+						<div class="week-head">
+							<p class="card-title">This week</p>
+							<p class="muted small" id="week-summary"></p>
+							<span class="spacer"></span>
+							<span id="week-delta" class="delta"></span>
+						</div>
+						<div class="week-days" id="week-days"></div>
+					</div>
+				</div>
+			</section>
+
+			<div class="split">
+				<section class="card">
+					<div class="card-head">
+						<div>
+							<p class="card-title">Last 7 days</p>
+							<p class="muted small">Distance per day</p>
+						</div>
+						<span class="tag">km</span>
+					</div>
+					<div class="area" id="area"></div>
+				</section>
+				<section class="card">
+					<div class="card-head">
+						<div>
+							<p class="card-title">Weekly volume</p>
+							<p class="muted small">Distance, last 12 weeks</p>
+						</div>
+						<span class="tag">km / wk</span>
+					</div>
+					<div class="bars" id="bars"></div>
+				</section>
+			</div>
+
+			<section class="card">
+				<div class="card-head">
+					<div>
+						<p class="card-title">Activity</p>
+						<p class="muted small">Minutes walked per day, last 26 weeks</p>
+					</div>
+					<div class="active-days">
+						<span id="active-days">0</span>
+						<span class="muted small">active days in 30</span>
+					</div>
+				</div>
+				<div class="heat-scroll"><div class="heat" id="heat"></div></div>
+				<div class="heat-legend muted small">
+					Less <i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i
+					><i data-level="4"></i> More
+				</div>
+			</section>
+
+			<div class="split reverse">
+				<section class="card">
+					<div class="card-head">
+						<div>
+							<p class="card-title">Recent walks</p>
+							<p class="muted small" id="walk-count"></p>
+						</div>
+					</div>
+					<ol id="history" class="history"></ol>
+					<div id="history-empty" class="empty">
+						<i class="ph ph-person-simple-walk"></i>
+						<p>No walks yet. Connect the pad and press Start. Walks save automatically.</p>
+					</div>
+				</section>
+				<section class="card">
+					<div class="card-head">
+						<p class="card-title">Records</p>
+					</div>
+					<dl class="records" id="records"></dl>
+				</section>
+			</div>
+
+			<footer class="foot muted small">
+				<span>
+					<kbd>Space</kbd> start or pause <kbd>↑</kbd><kbd>↓</kbd> speed <kbd>Esc</kbd> stop
+				</span>
+				<span id="message" role="status"></span>
+				<span>Not affiliated with or endorsed by PitPat.</span>
+			</footer>
+		</main>
+		<dialog id="menu" class="menu" aria-label="Menu">
+			<section class="menu-group" aria-label="Sync">
+				<button id="menu-account" class="menu-item" type="button">
+					<i id="menu-sync-icon" class="ph ph-cloud-slash"></i>
+					<span><b id="menu-sync-title">Sync and assistants</b><small id="menu-sync-note">Sign in to sync your walks and connect an AI assistant</small></span>
+					<i class="ph ph-caret-right menu-end"></i>
+				</button>
+				<button id="menu-sync-now" class="menu-item" type="button" hidden>
+					<i class="ph ph-arrows-clockwise"></i><span><b>Sync now</b></span>
+				</button>
+			</section>
+			<section class="menu-group" aria-label="AI agent">
+				<button id="menu-agent" class="menu-item" type="button">
+					<i class="ph ph-robot"></i>
+					<span><b>Connect your AI agent</b><small>Claude, ChatGPT and others</small></span>
+					<i class="ph ph-caret-right menu-end"></i>
+				</button>
+			</section>
+			<section class="menu-group" aria-label="Your walks">
+				<label class="menu-item">
+					<i class="ph ph-upload-simple"></i><span><b>Import</b><small>Merge walks from a backup file</small></span>
+					<input id="import" type="file" accept="application/json,.json" hidden />
+				</label>
+				<button id="export" class="menu-item" type="button">
+					<i class="ph ph-download-simple"></i><span><b>Export backup</b><small>Everything, with per-second readings</small></span>
+				</button>
+				<button id="export-csv" class="menu-item" type="button">
+					<i class="ph ph-table"></i><span><b>Export spreadsheet</b><small>One row per walk (CSV)</small></span>
+				</button>
+				<button id="reset" class="menu-item danger" type="button">
+					<i class="ph ph-trash"></i><span><b>Reset my data</b><small>Delete all walks</small></span>
+				</button>
+			</section>
+			<section class="menu-group" aria-label="Theme">
+				<div class="menu-theme" role="radiogroup" aria-label="Theme">
+					<button type="button" role="radio" data-theme-choice="auto"><i class="ph ph-circle-half"></i>Auto</button>
+					<button type="button" role="radio" data-theme-choice="light"><i class="ph ph-sun"></i>Light</button>
+					<button type="button" role="radio" data-theme-choice="dark"><i class="ph ph-moon"></i>Dark</button>
+				</div>
+			</section>
+			<section class="menu-group">
+				<button id="info" class="menu-item" type="button">
+					<i class="ph ph-info"></i><span><b>About Walk</b></span>
+				</button>
+			</section>
+		</dialog>
+		<dialog id="account-dialog" class="about acct" aria-labelledby="acct-title">
+			<form method="dialog" class="about-head">
+				<h2 id="acct-title">Sync and assistants</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+
+			<div id="acct-out">
+				<p>
+					Optional. Sync your walks between browsers, and connect an AI agent to them. No password: we email you a code.
+				</p>
+				<form id="acct-email-form" class="acct-form">
+					<label>Email<input id="acct-email" type="email" autocomplete="email" required maxlength="254" /></label>
+					<label class="consent"><input id="acct-consent" type="checkbox" required /><span>I'm 16 or over, I agree to the <a href="/terms/" target="_blank">terms</a>, and I consent to Walk storing my email address and walk totals as the <a href="/privacy/" target="_blank">privacy notice</a> describes.</span></label>
+					<button class="btn-primary" type="submit">Email me a code</button>
+				</form>
+				<form id="acct-code-form" class="acct-form" hidden>
+					<p>We sent a code to <b id="acct-sent-to"></b>. It works for 15 minutes, in this browser.</p>
+					<label
+						>Code<input id="acct-code" class="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+							maxlength="9" required
+					/></label>
+					<button class="btn-primary" type="submit">Sign in</button>
+					<p class="muted small">Nothing there? Check spam, or <button id="acct-again" class="linkish" type="button">use another address</button>.</p>
+				</form>
+			</div>
+
+			<div id="acct-in" hidden>
+				<p>Signed in as <b id="acct-who"></b>. <span id="acct-status" class="muted"></span></p>
+				<button id="acct-sync" class="btn" type="button"><i class="ph ph-arrows-clockwise"></i>Sync now</button>
+
+				<button id="acct-agent" class="btn" type="button"><i class="ph ph-robot"></i>Connect your AI agent</button>
+
+				<h3>Connected assistants</h3>
+				<div id="acct-assistants"></div>
+				<p id="acct-none" class="muted small" hidden>None yet.</p>
+
+				<div class="acct-actions">
+					<a class="btn" href="/api/me/export" download><i class="ph ph-download-simple"></i>Download my data</a>
+					<button id="acct-signout" class="btn" type="button">Sign out</button>
+					<button id="acct-delete" class="btn danger" type="button">Delete account</button>
+				</div>
+				<p class="muted small">Deleting your account removes your data from our server. Walks in your browsers stay.</p>
+			</div>
+			<p id="acct-error" class="error small" role="alert"></p>
+		</dialog>
+		<dialog id="reset-dialog" class="about reset" aria-labelledby="reset-title">
+			<form method="dialog" class="about-head">
+				<h2 id="reset-title">Reset my data</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<p id="reset-text"></p>
+			<p class="muted small">Your settings stay: goal, speed presets, theme. This can't be undone, so export a backup first if you might want your walks back.</p>
+			<div class="reset-actions">
+				<button id="reset-export" class="btn" type="button"><i class="ph ph-download-simple"></i>Export a backup</button>
+				<span class="spacer"></span>
+				<button id="reset-cancel" class="btn" type="button" autofocus>Cancel</button>
+				<button id="reset-confirm" class="btn danger" type="button"><i class="ph ph-trash"></i>Delete all walks</button>
+			</div>
+			<p id="reset-error" class="error small" role="alert"></p>
+		</dialog>
+		<dialog id="agent-dialog" class="about agents" aria-labelledby="agent-title">
+			<form method="dialog" class="about-head">
+				<h2 id="agent-title">Connect your AI agent</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<p>Two ways. Use either, or both.</p>
+
+			<section class="way">
+				<h3><i class="ph-bold ph-globe"></i>From anywhere <span class="tag">Needs cloud sync</span></h3>
+				<p class="muted small">Claude, ChatGPT or any assistant with remote MCP. It reads the walks you've synced, with no browser open. It can't run the pad.</p>
+				<ol class="steps">
+					<li>
+						<span id="agent-step-sync"
+							>Turn on cloud sync: <button id="agent-signin" class="linkish" type="button">sign in</button>. Your assistant reads
+							walks from there.</span
+						>
+					</li>
+					<li>
+						<span
+							>Copy the address:
+							<button id="agent-copy" class="copy-chip" type="button" title="Copy to clipboard">
+								<code id="agent-mcp"></code><i class="ph-bold ph-copy"></i></button
+						></span>
+					</li>
+					<li>
+						<span
+							>Add it as a connector.<br /><b>Claude:</b> Settings, Connectors, Add custom connector.<br /><b>ChatGPT:</b>
+							Settings, Apps &amp; Connectors, Advanced, Developer mode, Create.<br /><b>Claude Code:</b>
+							<code id="agent-cli"></code></span
+						>
+					</li>
+					<li><span>Sign in, press <b>Allow</b>, and ask: "How did my walks go this week?"</span></li>
+				</ol>
+			</section>
+
+			<section class="way">
+				<h3><i class="ph-bold ph-browser"></i>In this browser <span class="tag">No account needed</span></h3>
+				<p class="muted small">An assistant in the same Chrome window runs the pad with you, through WebMCP.</p>
+				<ol class="steps">
+					<li><span>Use Chrome with an assistant that supports WebMCP.</span></li>
+					<li><span>Connect your pad.</span></li>
+					<li><span>Ask it to start, pause for a call, or pick up the pace.</span></li>
+				</ol>
+				<label class="agent-mode">
+					<span><b>When an agent starts the belt</b></span>
+					<select id="agent-start">
+						<option value="ask">Ask me first</option>
+						<option value="auto">Start right away</option>
+					</select>
+				</label>
+				<p class="muted small">Pause and stop always work right away.</p>
+			</section>
+		</dialog>
+		<dialog id="about" class="about" aria-labelledby="about-title">
+			<form method="dialog" class="about-head">
+				<h2 id="about-title">About Walk</h2>
+				<button class="icon-btn" type="submit" title="Close" autofocus><i class="ph ph-x"></i></button>
+			</form>
+			<p>Control your walking pad from the browser and see every walk you've taken. Works with Superun, DeerRun and other PitPat pads.</p>
+			<ul class="about-list">
+				<li><i class="ph ph-lock-simple"></i><span><b>Private.</b> Walks stay on this device. Cloud sync is optional.</span></li>
+				<li><i class="ph ph-wifi-slash"></i><span><b>Works offline.</b> Install it from your browser.</span></li>
+				<li><i class="ph ph-browser"></i><span><b>Chrome, Edge or Opera</b> on a computer or Android. Not on iPhone.</span></li>
+				<li><i class="ph ph-warning"></i><span><b>Stay safe.</b> Keep the pad's remote within reach.</span></li>
+			</ul>
+			<a class="btn about-link" href="/" target="_blank">
+				<i class="ph-bold ph-book-open"></i><span>More about Walk</span>
+			</a>
+			<a class="btn about-source" href="https://github.com/omrilotan/walk" target="_blank" rel="noopener">
+				<i class="ph-bold ph-github-logo"></i><span>Source on GitHub</span>
+			</a>
+			<p class="muted small">Free and open source, in the public domain. Not affiliated with or endorsed by PitPat. <a href="/privacy/" target="_blank">Privacy</a> · <a href="/terms/" target="_blank">Terms</a></p>
+		</dialog>
+	</body>
+</html>

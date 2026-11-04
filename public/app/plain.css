@@ -1,0 +1,143 @@
+/* Small single-card pages: sign in, account, and the pages the Worker writes. */
+
+body.plain {
+	min-height: 100vh;
+	margin: 0;
+	padding: 48px 16px;
+	color: var(--text);
+	background: var(--bg);
+	box-sizing: border-box;
+}
+
+.plain-card {
+	display: grid;
+	gap: 16px;
+	max-width: 480px;
+	margin: 0 auto;
+	padding: 24px;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	line-height: 1.5;
+}
+
+.plain-card h1 {
+	margin: 0;
+	font-size: 22px;
+	line-height: 1.25;
+}
+
+.plain-card h2 {
+	margin: 8px 0 0;
+	font-size: 15px;
+}
+
+.plain-brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	font-weight: 700;
+	color: var(--text);
+	text-decoration: none;
+}
+
+.plain-brand img {
+	width: 28px;
+	height: 28px;
+}
+
+.plain-card form {
+	display: grid;
+	gap: 10px;
+}
+
+.plain-card label {
+	display: grid;
+	gap: 6px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.plain-card input[type="email"],
+.plain-card input[type="text"] {
+	height: 40px;
+	padding: 0 12px;
+	font: inherit;
+	font-size: 15px;
+	color: var(--text);
+	background: var(--surface-2);
+	border: 1px solid var(--line);
+}
+
+.plain-card input.code {
+	font-size: 22px;
+	letter-spacing: 6px;
+	text-align: center;
+}
+
+.plain-card .btn-primary,
+.plain-card .btn {
+	height: 40px;
+	padding: 0 16px;
+	font-size: 14px;
+}
+
+.plain-actions {
+	display: flex !important;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.plain-list {
+	margin: 0;
+	padding-left: 20px;
+}
+
+.plain-card a {
+	color: var(--accent);
+}
+
+.plain-card a.btn {
+	color: var(--text);
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px 0;
+	border-top: 1px solid var(--line);
+}
+
+.copy {
+	display: flex;
+	gap: 6px;
+}
+
+.copy input {
+	flex: 1;
+	min-width: 0;
+}
+
+.error {
+	color: var(--bad);
+	font-size: 13px;
+}
+
+.danger {
+	color: var(--bad) !important;
+}
+
+[hidden] {
+	display: none !important;
+}
+
+.plain-card .consent {
+	display: grid;
+	grid-template-columns: 20px 1fr;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 400;
+	color: var(--muted);
+}

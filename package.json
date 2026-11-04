@@ -6,6 +6,22 @@
 	"license": "Unlicense",
 	"type": "module",
 	"scripts": {
-		"start": "npx serve -l 8642 ."
+		"start": "wrangler dev",
+		"migrate:local": "wrangler d1 migrations apply walk --local",
+		"migrate": "wrangler d1 migrations apply walk --remote",
+		"deploy": "wrangler deploy",
+		"typecheck": "tsc --noEmit",
+		"test": "node --test test/"
+	},
+	"dependencies": {
+		"@cloudflare/workers-oauth-provider": "^1.2.4",
+		"@modelcontextprotocol/server": "2.3.1",
+		"agents": "^0.30.1",
+		"zod": "^4.1.5"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260923.1",
+		"typescript": "^5.9.3",
+		"wrangler": "^4.40.0"
 	}
 }

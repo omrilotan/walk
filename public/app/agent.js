@@ -6,7 +6,9 @@
 // Safety:
 // - Pause and stop always run right away.
 // - Starting the belt follows the user's choice: "ask" (default) shows an Allow /
-//   Deny bar and waits for a tap; "auto" starts right away.
+//   Always allow / Deny bar and waits for a tap; "auto" starts right away.
+//   Always allow switches to "auto"; the setting lives in the Connect your AI
+//   agent dialog.
 // - One speed change moves the target by at most MAX_STEP km/h.
 // - Connecting needs a user gesture, so agents cannot connect the pad.
 
@@ -32,9 +34,8 @@ export async function registerAgentTools(walk) {
 
 	const panel = $("#agent");
 	panel.hidden = false;
+	// The setting itself is wired by the app (Connect your AI agent dialog).
 	const mode = $("#agent-start");
-	mode.value = walk.getStartMode();
-	mode.addEventListener("change", () => walk.setStartMode(mode.value));
 
 	const notConnected = () => "The pad is not connected. Ask the user to press Connect in Walk.";
 
@@ -84,8 +85,12 @@ export async function registerAgentTools(walk) {
 				}
 				if (walk.getStartMode() === "ask") {
 					const verb = s.state === "paused" ? "resume" : "start";
-					const allowed = await approve(`An agent wants to ${verb} the belt at ${kmh.toFixed(1)} km/h.`, signal);
-					if (!allowed) return "The user did not allow the start. Do not retry unless they ask.";
+					const answer = await approve(`An agent wants to ${verb} the belt at ${kmh.toFixed(1)} km/h.`, signal);
+					if (!answer) return "The user did not allow the start. Do not retry unless they ask.";
+					if (answer === "always") {
+						walk.setStartMode("auto");
+						mode.value = "auto";
+					}
 				}
 				walk.start(kmh);
 				return `Start sent at ${kmh.toFixed(1)} km/h. The belt ramps up over a few seconds.`;
@@ -170,7 +175,7 @@ export async function registerAgentTools(walk) {
 
 let cancelPending = null;
 
-/** Shows the Allow / Deny bar and resolves true on Allow. */
+/** Shows the Allow / Always allow / Deny bar. Resolves "once", "always", or false. */
 function approve(text, signal) {
 	cancelPending?.(); // a newer request replaces an older one
 	const bar = $("#agent-ask");
@@ -183,15 +188,18 @@ function approve(text, signal) {
 			bar.hidden = true;
 			clearTimeout(timer);
 			$("#agent-allow").removeEventListener("click", onAllow);
+			$("#agent-always").removeEventListener("click", onAlways);
 			$("#agent-deny").removeEventListener("click", onDeny);
 			signal?.removeEventListener("abort", onDeny);
 			cancelPending = null;
 			resolve(allowed);
 		};
-		const onAllow = () => finish(true);
+		const onAllow = () => finish("once");
+		const onAlways = () => finish("always");
 		const onDeny = () => finish(false);
 		const timer = setTimeout(onDeny, APPROVAL_TIMEOUT_MS);
 		$("#agent-allow").addEventListener("click", onAllow);
+		$("#agent-always").addEventListener("click", onAlways);
 		$("#agent-deny").addEventListener("click", onDeny);
 		signal?.addEventListener("abort", onDeny);
 		cancelPending = onDeny;

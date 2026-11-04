@@ -151,7 +151,20 @@ export class Pad extends EventTarget {
 			this.write(HEARTBEAT);
 		}
 		const status = decode(new Uint8Array(event.target.value.buffer));
-		if (status) this.emit("status", status);
+		if (!status) return;
+		// The pad starts at its own minimum whatever speed the start asked for.
+		// Once the belt runs, ask again for the speed the user chose, and report
+		// that as the target meanwhile, so the app doesn't adopt the minimum.
+		if (this.startAt !== null) {
+			if (status.state === "running") {
+				if (Math.abs(status.target - this.startAt) > 0.05) this.setSpeed(this.startAt);
+				status.target = this.startAt;
+				this.startAt = null;
+			} else if (status.state === "starting") {
+				status.target = this.startAt;
+			}
+		}
+		this.emit("status", status);
 	};
 
 	write(bytes) {
@@ -174,19 +187,26 @@ export class Pad extends EventTarget {
 		}, SEND_DIRECTLY_AFTER_MS);
 	}
 
+	/** Speed to set once the belt is running; see onNotify. */
+	startAt = null;
+
 	start(kmh) {
+		this.startAt = kmh;
 		this.send(frame(CMD.run, kmh, 1));
 	}
 
 	setSpeed(kmh) {
+		if (this.startAt !== null) this.startAt = kmh; // changed while starting
 		this.send(frame(CMD.run, kmh, 5));
 	}
 
 	pause() {
+		this.startAt = null;
 		this.send(frame(CMD.pause));
 	}
 
 	stop() {
+		this.startAt = null;
 		this.send(frame(CMD.stop));
 	}
 }

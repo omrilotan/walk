@@ -31,9 +31,19 @@ const completed = (tx) =>
 
 const store = async (name, mode = "readonly") => (await open()).transaction(name, mode).objectStore(name);
 
-export const addSession = async (session) => done((await store("sessions", "readwrite")).add(session));
+// Every local change marks the walk for the next sync. Walks always get a uid.
+const touched = (session) => {
+	session.uid ??= crypto.randomUUID();
+	session.dirty = 1;
+	return session;
+};
 
-export const putSession = async (session) => done((await store("sessions", "readwrite")).put(session));
+export const addSession = async (session) => done((await store("sessions", "readwrite")).add(touched(session)));
+
+export const putSession = async (session) => done((await store("sessions", "readwrite")).put(touched(session)));
+
+/** Writes a walk as it came from sync, without marking it for the next one. */
+export const putSynced = async (session) => done((await store("sessions", "readwrite")).put(session));
 
 export const addSample = async (sample) => done((await store("samples", "readwrite")).add(sample));
 
@@ -69,6 +79,14 @@ export async function getSetting(key, fallback) {
 
 export const setSetting = async (key, value) => done((await store("settings", "readwrite")).put({ key, value }));
 
+/** Deletes every walk and its per-second readings. Settings stay. */
+export async function deleteAllWalks() {
+	const tx = (await open()).transaction(["sessions", "samples"], "readwrite");
+	tx.objectStore("sessions").clear();
+	tx.objectStore("samples").clear();
+	return completed(tx);
+}
+
 // ---------------------------------------------------------------- export / import
 
 /** Full backup. Walks carry a stable uid; old walks get one on first export. */
@@ -81,6 +99,7 @@ export async function exportAll() {
 		}
 		session.samples = (await getSamples(session.id)).map(({ session: _, ...sample }) => sample);
 		delete session.id; // local key, meaningless elsewhere
+		delete session.dirty;
 	}
 	return { format: "walk/1", exported: new Date().toISOString(), sessions };
 }

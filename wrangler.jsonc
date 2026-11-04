@@ -1,0 +1,47 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "walk",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	// No stored request logs: nothing about visitors is kept beyond what the
+	// database needs. Debug live with `wrangler tail` when needed.
+	"observability": { "enabled": false },
+	"upload_source_maps": true,
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [{ "pattern": "walk.omrilotan.com", "custom_domain": true }],
+	// The site is plain files. The Worker answers only the paths listed here;
+	// everything else is served straight from public/.
+	"assets": {
+		"directory": "public",
+		"binding": "ASSETS",
+		"html_handling": "auto-trailing-slash",
+		"not_found_handling": "404-page",
+		"run_worker_first": [
+			"/api/*",
+			"/oauth/*",
+			"/mcp",
+			"/mcp/*",
+			"/authorize",
+			"/token",
+			"/register",
+			"/.well-known/*"
+		]
+	},
+	// Resource IDs are not secrets: nothing can reach them without the account.
+	// Created with --jurisdiction eu: account data is stored in the EU (public/privacy/).
+	"d1_databases": [
+		{ "binding": "DB", "database_name": "walk", "database_id": "27a60502-1028-4072-84a4-dac2604e5d5e" }
+	],
+	"kv_namespaces": [{ "binding": "OAUTH_KV", "id": "0ede5252e07b47689dc2300d9935ed49" }],
+	"send_email": [{ "name": "EMAIL" }],
+	// Client registrations per caller address.
+	"ratelimits": [{ "name": "REGISTER_LIMIT", "namespace_id": "2001", "simple": { "limit": 5, "period": 60 } }],
+	"triggers": { "crons": ["17 4 * * *"] },
+	"vars": {
+		"SELF_URL": "https://walk.omrilotan.com",
+		"FROM_ADDRESS": "walk@omrilotan.com",
+		"FROM_NAME": "Walk"
+	}
+}
