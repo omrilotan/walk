@@ -78,7 +78,9 @@ export function page(title: string, body: string, status = 200, script?: string)
 				// No form-action: the consent form's answer redirects to the assistant.
 				"content-security-policy":
 					"default-src 'self'; frame-ancestors 'none'; base-uri 'none'",
-				"referrer-policy": "no-referrer",
+				// Not "no-referrer": with it, browsers send `Origin: null` on the page's own
+				// form posts, and sameOrigin() refuses them.
+				"referrer-policy": "same-origin",
 			},
 		},
 	);

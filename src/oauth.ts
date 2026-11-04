@@ -109,13 +109,13 @@ export async function consent(request: Request, env: Env): Promise<Response> {
 		);
 	}
 
-	if (request.method !== "POST" || !sameOrigin(request, env)) return problem(403, "Forbidden");
-	if (!user) return problem(401, "Sign in first.");
+	if (request.method !== "POST" || !sameOrigin(request, env)) return refused();
+	if (!user) return expired();
 	const form = await request.formData().catch(() => null);
 	const id = String(form?.get("req") ?? "");
 	const pending = await load(env, id);
 	if (!pending) return expired();
-	if (String(form?.get("csrf") ?? "") !== pending.csrf) return problem(403, "Forbidden");
+	if (String(form?.get("csrf") ?? "") !== pending.csrf) return refused();
 	await env.OAUTH_KV.delete(key(id));
 
 	if (form?.get("answer") !== "allow") {
@@ -135,6 +135,14 @@ export async function consent(request: Request, env: Env): Promise<Response> {
 		props,
 	});
 	return Response.redirect(redirectTo, 302);
+}
+
+function refused(): Response {
+	return page(
+		"Couldn't connect",
+		"<h1>That didn't go through</h1><p>Start connecting again from your assistant.</p>",
+		403,
+	);
 }
 
 function expired(): Response {
