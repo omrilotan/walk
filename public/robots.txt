@@ -1,4 +1,8 @@
+# Content Signals (https://contentsignals.org/): how the pages here may be used.
+# Search, answers and model training are all welcome: the site is about a free,
+# public-domain app, and no one's personal data is ever on a public page.
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 Disallow: /api/
 Disallow: /oauth/

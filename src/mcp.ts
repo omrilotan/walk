@@ -67,19 +67,64 @@ function local(t: number, zone: string): string {
 	return new Date(wallClock(t, zone)).toISOString().slice(0, 16).replace("T", " ");
 }
 
+/** Who the server is: shared by the MCP handshake and the server card. */
+export const SERVER = { name: "walk", title: "Walk", version: "1.0.0" } as const;
+
+export const INSTRUCTIONS =
+	"Walk records walks on an under-desk walking pad. These tools read the user's walks as synced from their browser: a walk shows up here after Walk syncs it, usually when the walk ends. Times are in the user's own time zone. You cannot start or stop the pad from here.";
+
+const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
+
+/**
+ * The tools, described once: registered below, and listed in the server card
+ * (src/discovery.ts). `scope` names the permission a tool needs beyond "read".
+ */
+export const TOOLS = {
+	get_summary: {
+		title: "Walking summary",
+		description:
+			"The user's walking stats: today (distance, minutes, steps, calories, walks), the daily goal in km and progress toward it, yesterday, this week (Monday to today) and the change versus the same days last week, the current streak in days, active days in the last 30, lifetime totals, personal records, and the last walk.",
+		inputSchema: z.object({}),
+		annotations: readOnly,
+	},
+	get_daily_totals: {
+		title: "Daily totals",
+		description:
+			"Distance, minutes, steps and number of walks for each of the last N days, oldest first, ending today, with whether the daily goal was met. Days without walks are included with zeros.",
+		inputSchema: z.object({
+			days: z.number().int().min(1).max(366).default(14).describe("How many days, ending today. Default 14."),
+		}),
+		annotations: readOnly,
+	},
+	get_walks: {
+		title: "Walks",
+		description:
+			"Individual walks, newest first: start and end (local time), distance, minutes, steps, calories, average and top speed. Optionally between two dates (YYYY-MM-DD, inclusive, in the user's time zone).",
+		inputSchema: z.object({
+			from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("First day, YYYY-MM-DD."),
+			to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Last day, YYYY-MM-DD."),
+			limit: z.number().int().min(1).max(200).default(20).describe("At most this many. Default 20."),
+		}),
+		annotations: readOnly,
+	},
+	set_goal: {
+		title: "Set daily goal",
+		description:
+			"Sets the user's daily walking goal in km. Every device with Walk picks it up on its next sync. Ask the user before changing it.",
+		inputSchema: z.object({ km: z.number().min(0.5).max(50).describe("Daily goal in km.") }),
+		annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+		scope: "goal",
+	},
+} as const;
+
 export function createServer(env: Env, props: Props): McpServer {
 	const server = new McpServer(
 		{
-			name: "walk",
-			title: "Walk",
-			version: "1.0.0",
+			...SERVER,
 			websiteUrl: env.SELF_URL,
 			icons: [{ src: `${env.SELF_URL}/icon.svg`, mimeType: "image/svg+xml", sizes: ["any"] }],
 		},
-		{
-			instructions:
-				"Walk records walks on an under-desk walking pad. These tools read the user's walks as synced from their browser: a walk shows up here after Walk syncs it, usually when the walk ends. Times are in the user's own time zone. You cannot start or stop the pad from here.",
-		},
+		{ instructions: INSTRUCTIONS },
 	);
 
 	const text = (value: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] });
@@ -126,13 +171,7 @@ export function createServer(env: Env, props: Props): McpServer {
 
 	server.registerTool(
 		"get_summary",
-		{
-			title: "Walking summary",
-			description:
-				"The user's walking stats: today (distance, minutes, steps, calories, walks), the daily goal in km and progress toward it, yesterday, this week (Monday to today) and the change versus the same days last week, the current streak in days, active days in the last 30, lifetime totals, personal records, and the last walk.",
-			inputSchema: z.object({}),
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-		},
+		TOOLS.get_summary,
 		async () => {
 			const data = await load();
 			if (!data) return failure(gone);
@@ -162,15 +201,7 @@ export function createServer(env: Env, props: Props): McpServer {
 
 	server.registerTool(
 		"get_daily_totals",
-		{
-			title: "Daily totals",
-			description:
-				"Distance, minutes, steps and number of walks for each of the last N days, oldest first, ending today, with whether the daily goal was met. Days without walks are included with zeros.",
-			inputSchema: z.object({
-				days: z.number().int().min(1).max(366).default(14).describe("How many days, ending today. Default 14."),
-			}),
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-		},
+		TOOLS.get_daily_totals,
 		async ({ days }) => {
 			const data = await load();
 			if (!data) return failure(gone);
@@ -199,17 +230,7 @@ export function createServer(env: Env, props: Props): McpServer {
 
 	server.registerTool(
 		"get_walks",
-		{
-			title: "Walks",
-			description:
-				"Individual walks, newest first: start and end (local time), distance, minutes, steps, calories, average and top speed. Optionally between two dates (YYYY-MM-DD, inclusive, in the user's time zone).",
-			inputSchema: z.object({
-				from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("First day, YYYY-MM-DD."),
-				to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Last day, YYYY-MM-DD."),
-				limit: z.number().int().min(1).max(200).default(20).describe("At most this many. Default 20."),
-			}),
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-		},
+		TOOLS.get_walks,
 		async ({ from, to, limit }) => {
 			const data = await load();
 			if (!data) return failure(gone);
@@ -224,16 +245,10 @@ export function createServer(env: Env, props: Props): McpServer {
 		},
 	);
 
-	if (props.scopes.includes("goal")) {
+	if (props.scopes.includes(TOOLS.set_goal.scope)) {
 		server.registerTool(
 			"set_goal",
-			{
-				title: "Set daily goal",
-				description:
-					"Sets the user's daily walking goal in km. Every device with Walk picks it up on its next sync. Ask the user before changing it.",
-				inputSchema: z.object({ km: z.number().min(0.5).max(50).describe("Daily goal in km.") }),
-				annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-			},
+			TOOLS.set_goal,
 			async ({ km }) => {
 				const goal = Math.round(km * 10) / 10;
 				const result = await env.DB.prepare("UPDATE users SET goal_km = ?, goal_updated = ? WHERE id = ?")

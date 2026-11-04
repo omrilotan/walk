@@ -14,6 +14,7 @@ Walk is a web app, so changes are listed by date, not version.
 - Reset my data: deletes all walks, here and in your account.
 - Privacy notice and terms. Sign-up asks for consent, the account stores only what sync needs, nothing is logged, and you can download your data. Fonts and icons are served by Walk itself. Security headers on every page.
 - Fixed: Start goes to your target speed instead of 1 km/h.
+- For AI agents: every public page in Markdown (ask with `Accept: text/markdown`, or add `index.md`), `llms.txt`, an MCP server card, an API catalog, and Content Signals in robots.txt.
 
 ## 2026-11-03
 

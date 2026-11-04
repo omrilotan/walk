@@ -26,7 +26,14 @@
 			"/authorize",
 			"/token",
 			"/register",
-			"/.well-known/*"
+			"/.well-known/*",
+			// Public pages: the Worker answers agents that ask for Markdown (src/discovery.ts).
+			"/",
+			"/index.md",
+			"/privacy/",
+			"/privacy/index.md",
+			"/terms/",
+			"/terms/index.md"
 		]
 	},
 	// Resource IDs are not secrets: nothing can reach them without the account.

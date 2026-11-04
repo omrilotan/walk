@@ -1,6 +1,7 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { createMcpHandler } from "agents/mcp/server";
 import { currentUser, enterCode, signOut, startSignIn } from "./auth.ts";
+import { apiCatalog, page, serverCard } from "./discovery.ts";
 import { SCOPES, type Env, type Props } from "./env.ts";
 import { createServer } from "./mcp.ts";
 import { authorize, consent } from "./oauth.ts";
@@ -57,7 +58,10 @@ const site = {
 			return problem(404, "Not found");
 		}
 
-		return env.ASSETS.fetch(request);
+		if (path === "/.well-known/mcp/server-card.json") return serverCard(env);
+		if (path === "/.well-known/api-catalog") return apiCatalog(env);
+
+		return (await page(request, env)) ?? env.ASSETS.fetch(request);
 	},
 };
 
@@ -92,6 +96,12 @@ export default {
 					{ status: 429, headers: { "retry-after": "60" } },
 				);
 			}
+		}
+		// The MCP server's metadata lives at /.well-known/oauth-protected-resource/mcp
+		// (RFC 9728). Clients that look at the bare address get the same document.
+		if (url.pathname === "/.well-known/oauth-protected-resource") {
+			url.pathname += "/mcp";
+			return oauth(env).fetch(new Request(url, request), env, ctx);
 		}
 		return oauth(env).fetch(request, env, ctx);
 	},

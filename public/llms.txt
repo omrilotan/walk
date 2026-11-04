@@ -1,0 +1,22 @@
+# Walk
+
+> Walk is a free web app that controls Superun, DeerRun and other PitPat walking pads from the browser over Bluetooth, without the PitPat app, and tracks every walk. Walks stay on the user's device; cloud sync is optional.
+
+Every page below is also available as Markdown: ask with `Accept: text/markdown`, or use the `.md` address.
+
+## Pages
+
+- [About Walk](https://walk.omrilotan.com/index.md): what it does, supported pads and browsers, how to connect a pad, FAQ
+- [Privacy notice](https://walk.omrilotan.com/privacy/index.md): what an account stores, why, for how long, and the user's rights
+- [Terms](https://walk.omrilotan.com/terms/index.md)
+
+## For AI agents
+
+- [Remote MCP server](https://walk.omrilotan.com/mcp): read the user's synced walks, goal progress, streaks and records; set the daily goal if allowed. Streamable HTTP with OAuth: the user signs in to Walk and approves. Needs cloud sync turned on in Walk. Cannot run the pad.
+- [MCP server card](https://walk.omrilotan.com/.well-known/mcp/server-card.json): the server's tools and how to connect
+- [WebMCP](https://walk.omrilotan.com/app/): with the app open in Chrome, an in-browser assistant can read walks and run the pad; the user approves each start of the belt
+
+## Optional
+
+- [Source code](https://github.com/omrilotan/walk): public domain (The Unlicense)
+- [Changelog](https://github.com/omrilotan/walk/blob/main/CHANGELOG.md)
