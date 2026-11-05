@@ -75,7 +75,11 @@ function oauth(env: Env): OAuthProvider {
 		tokenEndpoint: "/token",
 		clientRegistrationEndpoint: "/register",
 		scopesSupported: [...SCOPES],
-		resourceMetadata: { resource: `${env.SELF_URL}/mcp` },
+		resourceMetadata: { resource: `${env.SELF_URL}/mcp`, resource_name: "Walk" },
+		// Listed in the resource metadata and the 401 challenge. Both, so a client that
+		// asks for exactly these gets what it got by asking for nothing: read, and the
+		// goal. The consent page still names each one.
+		requiredScopes: [...SCOPES],
 		// Access tokens last an hour; refresh tokens keep the connection for a
 		// month of disuse. Disconnecting in Walk ends both.
 		accessTokenTTL: 3600,
