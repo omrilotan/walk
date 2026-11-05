@@ -26,7 +26,7 @@ export function modelContext() {
 /**
  * @param {object} walk - The app's control surface:
  *   status(), summary(), recentWalks(limit), start(kmh), setSpeed(kmh), setTarget(kmh),
- *   pause(), stop(), setGoal(km), getStartMode(), setStartMode(mode).
+ *   pause(), stop(), setGoal(km), setTimer(timer), getStartMode(), setStartMode(mode).
  */
 export async function registerAgentTools(walk) {
 	const context = modelContext();
@@ -43,7 +43,7 @@ export async function registerAgentTools(walk) {
 		{
 			name: "get_status",
 			description:
-				"Current pad and walk state: whether the pad is connected, state (offline, stopped, starting, running, paused), current and target speed in km/h, the pad's max speed, the current walk's totals (distance km, seconds, steps, calories), and whether starting needs the user's approval.",
+				"Current pad and walk state: whether the pad is connected, state (offline, stopped, starting, running, paused), current and target speed in km/h, the pad's max speed, the current walk's totals (distance km, seconds, steps, calories), the walk timer (remaining is in minutes or km), and whether starting needs the user's approval.",
 			inputSchema: { type: "object", properties: {} },
 			annotations: { readOnlyHint: true },
 			execute: async () => json(walk.status()),
@@ -157,6 +157,32 @@ export async function registerAgentTools(walk) {
 				if (!(km >= 0.5 && km <= 50)) return "The goal must be between 0.5 and 50 km.";
 				await walk.setGoal(km);
 				return `Daily goal set to ${km} km.`;
+			},
+		},
+		{
+			name: "set_timer",
+			description:
+				"Sets the walk timer: when this walk reaches so many minutes, or so many km, Walk chimes, or pauses the belt and chimes. It counts the current walk's own totals, so time already walked counts and pauses don't. kind: time (amount in minutes), distance (amount in km), or off. atEnd: chime (the default) or pause. Tell the user what you set.",
+			inputSchema: {
+				type: "object",
+				properties: {
+					kind: { type: "string", enum: ["time", "distance", "off"] },
+					amount: { type: "number", description: "Minutes for time, km for distance." },
+					atEnd: { type: "string", enum: ["chime", "pause"], description: "What happens at the end. Default: the user's last choice." },
+				},
+				required: ["kind"],
+			},
+			annotations: { consequentialHint: true },
+			execute: async ({ kind, amount, atEnd } = {}) => {
+				if (!["time", "distance", "off"].includes(kind)) return "kind must be time, distance or off.";
+				if (kind !== "off" && !(amount > 0)) return "Give an amount: minutes for time, km for distance.";
+				const timer = { kind, ...(atEnd && { end: atEnd }) };
+				if (kind === "time") timer.minutes = amount;
+				if (kind === "distance") timer.km = amount;
+				const set = walk.setTimer(timer);
+				if (set.kind === "off") return "Timer off.";
+				const end = set.atEnd === "pause" ? "pause the belt and chime" : "chime";
+				return `Timer set: Walk will ${end} at ${set.amount} ${set.unit} of this walk.`;
 			},
 		},
 	];

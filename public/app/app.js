@@ -4,6 +4,7 @@ import { areaChart, barChart, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
 import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
+import { DEFAULT_TIMER, KINDS, amount, chime, crossed, describe, done, goal, normalize, primeChime, progress } from "./timer.js";
 import { registerAgentTools } from "./agent.js";
 import { checkAccount, currentAccount as account, recordDeletion, resetAll, signedIn, sync } from "./sync.js";
 import { api, enterCode, requestCode, signOut } from "./auth.js";
@@ -37,6 +38,8 @@ const ui = {
 	dashAt: 0,
 	status: null, // last status from the pad
 	startMode: "ask", // agent starts: "ask" or "auto"
+	timer: DEFAULT_TIMER,
+	timerLast: null, // { key, value }: the walk's last count, to see the timer's target crossed
 };
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -185,6 +188,9 @@ function renderLive({ status, session }) {
 		renderSpark();
 	}
 
+	renderTimerProgress(session?.totals ?? null);
+	checkTimer(session);
+
 	// Keep today's numbers moving during a walk without hammering the DB.
 	if (session && now - ui.dashAt > 5000) {
 		ui.dashAt = now;
@@ -221,6 +227,120 @@ function renderHeadline() {
 		paused: "Catch your breath.",
 	};
 	$("#headline").textContent = headlines[ui.state] ?? headlines.offline;
+}
+
+// ---------------------------------------------------------------- timer
+
+function setTimer(changes) {
+	ui.timer = normalize({ ...ui.timer, ...changes });
+	renderTimer();
+	setSetting("timer", ui.timer);
+}
+
+function renderTimer() {
+	const timer = ui.timer;
+	const box = $("#timer");
+	box.dataset.kind = timer.kind;
+	for (const button of box.querySelectorAll("button[data-kind]")) {
+		button.setAttribute("aria-checked", String(button.dataset.kind === timer.kind));
+	}
+	for (const button of box.querySelectorAll("button[data-end]")) {
+		button.setAttribute("aria-checked", String(button.dataset.end === timer.end));
+	}
+	if (timer.kind !== "off") {
+		const { unit, step, min, max } = KINDS[timer.kind];
+		const input = $("#timer-value");
+		// Don't rewrite the number while it's being typed.
+		if (document.activeElement !== input) input.value = String(amount(timer));
+		input.min = String(min);
+		input.max = String(max);
+		input.setAttribute("aria-label", timer.kind === "time" ? "Minutes" : "Kilometres");
+		$("#timer-unit").textContent = unit;
+		$("#timer-less").setAttribute("aria-label", `${step} ${unit} less`);
+		$("#timer-more").setAttribute("aria-label", `${step} ${unit} more`);
+	}
+	renderTimerProgress(tracker.session?.totals ?? null);
+}
+
+/** The timer's tile (Time or Distance) fills up; the timer row counts down. */
+function renderTimerProgress(totals) {
+	const timer = ui.timer;
+	const share = totals ? progress(timer, totals) : 0;
+	for (const tile of document.querySelectorAll("[data-timer-kind]")) {
+		const on = tile.dataset.timerKind === timer.kind;
+		tile.toggleAttribute("data-timer", on);
+		tile.dataset.done = String(on && share === 1);
+		tile.style.setProperty("--progress", on ? String(share) : "0");
+		tile.querySelector(".metric-of").textContent = on ? (share === 1 ? "Done" : `of ${describe(timer)}`) : "";
+	}
+
+	const box = $("#timer");
+	const left = $("#timer-left");
+	if (timer.kind === "off" || !totals) {
+		box.dataset.state = "idle";
+		left.textContent = "";
+		return;
+	}
+	const remaining = goal(timer) - done(timer, totals);
+	if (remaining <= 0) {
+		box.dataset.state = "done";
+		left.innerHTML = `<i class="ph-bold ph-check"></i>Done`;
+		return;
+	}
+	box.dataset.state = "running";
+	left.textContent = timer.kind === "time" ? `${clock(Math.ceil(remaining))} left` : `${remaining.toFixed(2)} km left`;
+}
+
+/** On every status: did this update take the walk past the timer's target? */
+function checkTimer(session) {
+	if (!session) {
+		ui.timerLast = null;
+		return;
+	}
+	const key = `${session.uid}:${ui.timer.kind}`;
+	const before = ui.timerLast?.key === key ? ui.timerLast.value : null;
+	const after = done(ui.timer, session.totals);
+	ui.timerLast = { key, value: after };
+	if (crossed(ui.timer, before, after)) timerDone();
+}
+
+function timerDone() {
+	const what = `${describe(ui.timer)} done.`;
+	chime();
+	if (ui.timer.end === "pause" && pad.connected && isMoving()) {
+		pad.pause();
+		message(`${what} Belt paused.`);
+	} else message(what);
+}
+
+function wireTimer() {
+	const box = $("#timer");
+	box.addEventListener("click", (event) => {
+		primeChime(); // a tap now lets the chime play later
+		const kind = event.target.closest("button[data-kind]")?.dataset.kind;
+		if (kind) setTimer({ kind });
+		const end = event.target.closest("button[data-end]")?.dataset.end;
+		if (end) setTimer({ end });
+	});
+	const field = () => (ui.timer.kind === "time" ? "minutes" : "km");
+	const step = (direction) => {
+		const { step } = KINDS[ui.timer.kind];
+		const now = amount(ui.timer);
+		// Snap to the step: 32 goes to 35 or 30.
+		const next = direction > 0 ? Math.floor(now / step + 1e-9) * step + step : Math.ceil(now / step - 1e-9) * step - step;
+		setTimer({ [field()]: next });
+	};
+	$("#timer-less").addEventListener("click", () => step(-1));
+	$("#timer-more").addEventListener("click", () => step(1));
+	const input = $("#timer-value");
+	input.addEventListener("input", () => {
+		const value = Number(input.value);
+		if (value > 0) setTimer({ [field()]: value });
+	});
+	input.addEventListener("change", () => renderTimer()); // show the stored value
+	input.addEventListener("keydown", (event) => {
+		if (event.key === "Enter") input.blur();
+	});
 }
 
 // ---------------------------------------------------------------- dashboard
@@ -671,7 +791,10 @@ const actions = {
 			if (error.name !== "NotFoundError") message(error.message);
 		}
 	},
-	start: guarded(() => applySpeed()),
+	start: guarded(() => {
+		primeChime(); // a tap now lets the timer chime later
+		applySpeed();
+	}),
 	pause: guarded(() => pad.pause()),
 	stop: guarded(() => pad.stop()),
 	slower: () => setTarget(ui.target - STEP, { send: isMoving() }),
@@ -710,6 +833,18 @@ const walkInfo = (s) =>
 		topSpeed: s.maxSpeed,
 	};
 const dayInfo = (d) => ({ ...walkTotals(d), walks: d.walks });
+function timerInfo() {
+	const timer = ui.timer;
+	if (timer.kind === "off") return { kind: "off" };
+	const totals = tracker.session?.totals;
+	return {
+		kind: timer.kind,
+		amount: amount(timer),
+		unit: KINDS[timer.kind].unit,
+		atEnd: timer.end,
+		remaining: totals ? r2(Math.max(0, goal(timer) - done(timer, totals)) / (timer.kind === "time" ? 60 : 1)) : null,
+	};
+}
 
 const agentSurface = {
 	status: () => ({
@@ -721,8 +856,13 @@ const agentSurface = {
 		minSpeed: MIN_SPEED,
 		maxSpeed: ui.maxSpeed,
 		currentWalk: tracker.session ? walkInfo(tracker.session) : null,
+		timer: timerInfo(),
 		startNeedsApproval: ui.startMode === "ask",
 	}),
+	setTimer: (timer) => {
+		setTimer(timer);
+		return timerInfo();
+	},
 	summary: () => {
 		const others = ui.sessions.filter((s) => s.id !== tracker.session?.id);
 		const s = summarize(tracker.session ? [tracker.session, ...others] : others);
@@ -833,6 +973,8 @@ async function init() {
 	ui.goal = await getSetting("goal", 5);
 	ui.startMode = await getSetting("agentStart", "ask");
 	$("#goal").value = ui.goal;
+	ui.timer = normalize(await getSetting("timer", DEFAULT_TIMER));
+	renderTimer();
 	setTarget(await getSetting("target", 3));
 	await tracker.finishStale();
 	await loadSessions();
@@ -870,6 +1012,7 @@ async function init() {
 	$("#menu-agent").addEventListener("click", openAgent);
 	wireAccount();
 	wireAgent();
+	wireTimer();
 	$("#connect").addEventListener("click", actions.connect);
 	$("#start").addEventListener("click", actions.start);
 	$("#pause").addEventListener("click", actions.pause);

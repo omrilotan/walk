@@ -57,6 +57,7 @@
 				"featureList": [
 					"Start, pause and stop with one tap",
 					"Exact target speed and speed presets",
+					"Walk timer: chime or pause after a set time or distance",
 					"Live speed, distance, time, steps and calories",
 					"Daily goal, weekly trends and activity calendar",
 					"JSON and CSV export and import",
@@ -124,13 +125,15 @@
 				</div>
 
 				<div class="metrics">
-					<div class="metric featured">
-						<span class="label"><i class="ph ph-path"></i>Distance</span>
+					<div class="metric featured" data-timer-kind="distance">
+						<span class="label"><i class="ph ph-path"></i>Distance<span class="metric-of"></span></span>
 						<span class="value"><span id="m-distance">0.00</span><small>km</small></span>
+						<span class="metric-bar" aria-hidden="true"></span>
 					</div>
-					<div class="metric">
-						<span class="label"><i class="ph ph-timer"></i>Time</span>
+					<div class="metric" data-timer-kind="time">
+						<span class="label"><i class="ph ph-timer"></i>Time<span class="metric-of"></span></span>
 						<span class="value" id="m-time">0:00</span>
+						<span class="metric-bar" aria-hidden="true"></span>
 					</div>
 					<div class="metric">
 						<span class="label"><i class="ph ph-fire"></i>Calories</span>
@@ -178,6 +181,32 @@
 						<button id="save-preset" class="chip-add" type="button">
 							<i class="ph-bold ph-plus"></i>Save current
 						</button>
+					</div>
+
+					<!-- The walk timer (timer.js): chime or pause after so many minutes or km of this walk. -->
+					<div id="timer" class="timer" data-kind="off" data-state="idle">
+						<span class="label" id="timer-label"><i class="ph ph-hourglass-medium"></i>Timer</span>
+						<div class="seg timer-kind" role="radiogroup" aria-labelledby="timer-label">
+							<button type="button" role="radio" data-kind="off">Off</button>
+							<button type="button" role="radio" data-kind="time">Time</button>
+							<button type="button" role="radio" data-kind="distance">Distance</button>
+						</div>
+						<div class="timer-set">
+							<div class="timer-amount">
+								<button type="button" id="timer-less" class="step" aria-label="Less"><i class="ph-bold ph-minus"></i></button>
+								<label class="timer-field">
+									<input id="timer-value" type="number" inputmode="decimal" step="any" aria-label="Timer amount" />
+									<span id="timer-unit">min</span>
+								</label>
+								<button type="button" id="timer-more" class="step" aria-label="More"><i class="ph-bold ph-plus"></i></button>
+							</div>
+							<span class="timer-then" aria-hidden="true">then</span>
+							<div class="seg timer-end" role="radiogroup" aria-label="When it's done">
+								<button type="button" role="radio" data-end="chime"><i class="ph-bold ph-bell-simple-ringing"></i>Chime</button>
+								<button type="button" role="radio" data-end="pause"><i class="ph-fill ph-pause"></i><span>Pause<span class="wide-only"> belt</span></span></button>
+							</div>
+							<span id="timer-left" class="timer-left"></span>
+						</div>
 					</div>
 
 					<!-- An agent in this browser asks before starting the belt (agent.js). -->

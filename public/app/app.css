@@ -520,7 +520,8 @@ body[data-state="starting"] #speed-now {
 	grid-template-columns: auto minmax(0, 1fr);
 	grid-template-areas:
 		"transport speed"
-		"presets presets";
+		"presets presets"
+		"timer timer";
 	gap: 12px 24px;
 	align-items: end;
 	min-width: 0;
@@ -691,6 +692,256 @@ body[data-state="starting"] #speed-now {
 
 .chip-add:hover {
 	color: var(--text);
+}
+
+/* walk timer: a row of its own under the presets */
+
+.timer {
+	grid-area: timer;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+
+.timer > .label {
+	margin-right: 2px;
+}
+
+.timer-set {
+	display: flex;
+	flex: 1;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.timer[data-kind="off"] .timer-set {
+	display: none;
+}
+
+.seg {
+	display: inline-flex;
+	height: 40px;
+	background: var(--surface);
+	border: 1px solid var(--line);
+}
+
+.seg button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 0 14px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--muted);
+	white-space: nowrap;
+	background: transparent;
+	border: 0;
+}
+
+.seg button + button {
+	border-left: 1px solid var(--line);
+}
+
+.seg button:hover {
+	color: var(--text);
+}
+
+.seg button[aria-checked="true"] {
+	position: relative;
+	color: var(--accent);
+	background: var(--accent-soft);
+	box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.seg i {
+	font-size: 16px;
+}
+
+.timer-amount {
+	display: grid;
+	grid-template-columns: 40px minmax(0, 1fr) 40px;
+	gap: 4px;
+}
+
+.timer-amount .step {
+	width: 40px;
+	height: 40px;
+	font-size: 15px;
+}
+
+.timer-field {
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: 4px;
+	min-width: 0;
+	height: 40px;
+	padding: 0 10px;
+	cursor: text;
+	background: var(--surface);
+	border: 1px solid var(--line);
+}
+
+.timer-field:focus-within {
+	border-color: var(--accent);
+}
+
+.timer-field input {
+	width: 4.6ch;
+	min-width: 0;
+	font: inherit;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 38px;
+	letter-spacing: -0.02em;
+	text-align: right;
+	color: var(--text);
+	background: transparent;
+	border: 0;
+	outline: none;
+	-moz-appearance: textfield;
+}
+
+.timer-field input::-webkit-inner-spin-button,
+.timer-field input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+}
+
+.timer-field span {
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.timer-then {
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.timer-left {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin-left: auto;
+	font-size: 15px;
+	font-weight: 700;
+	white-space: nowrap;
+	color: var(--accent);
+}
+
+.timer[data-state="idle"] .timer-left {
+	display: none;
+}
+
+/* The timer's tile, Time or Distance, fills along its bottom edge. */
+.metric {
+	position: relative;
+}
+
+.metric-of {
+	margin-left: auto;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.metric[data-done="true"] .metric-of {
+	font-weight: 700;
+	color: var(--accent);
+}
+
+.metric-bar {
+	display: none;
+	position: absolute;
+	inset: auto 0 0;
+	height: 4px;
+	background: linear-gradient(to right, var(--accent) calc(var(--progress, 0) * 100%), var(--line) 0);
+}
+
+.metric[data-timer] .metric-bar {
+	display: block;
+}
+
+.metric.featured .metric-bar {
+	background: linear-gradient(
+		to right,
+		var(--on-accent) calc(var(--progress, 0) * 100%),
+		color-mix(in srgb, var(--on-accent) 25%, transparent) 0
+	);
+}
+
+.metric.featured[data-done="true"] .metric-of {
+	color: inherit;
+	opacity: 1;
+}
+
+@media (max-width: 600px) {
+	/* Phones: Timer and the kind on one line, the amount and the ending under it. */
+	.timer {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		padding-top: 10px;
+	}
+	.seg button {
+		flex: 1;
+		padding: 0 6px;
+		font-size: 13px;
+	}
+	.timer-set {
+		grid-column: 1 / -1;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+	.timer-amount {
+		grid-template-columns: 36px minmax(0, 1fr) 36px;
+		gap: 3px;
+	}
+	.timer-amount .step {
+		width: 36px;
+	}
+	.timer-field {
+		padding: 0 8px;
+	}
+	.timer-field input {
+		font-size: 18px;
+	}
+	.timer-left {
+		grid-column: 1 / -1;
+		margin-left: 0;
+		font-size: 14px;
+	}
+	.wide-only,
+	.timer-then {
+		display: none;
+	}
+}
+
+@media (max-width: 380px) {
+	.timer-end i {
+		display: none;
+	}
+	.timer-end button {
+		padding: 0 8px;
+	}
+	.timer-amount {
+		grid-template-columns: 34px minmax(0, 1fr) 34px;
+		gap: 3px;
+	}
+	.timer-amount .step {
+		width: 34px;
+	}
+	.timer-field {
+		gap: 2px;
+		padding: 0 6px;
+	}
+	.timer-field input {
+		font-size: 17px;
+	}
 }
 
 /* ---------------------------------------------------------------- today */
@@ -1331,7 +1582,7 @@ kbd {
 @media (max-width: 1040px) {
 	.control-band {
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-areas: "transport" "speed" "presets";
+		grid-template-areas: "transport" "speed" "presets" "timer";
 	}
 	.speed-control {
 		justify-self: stretch;
