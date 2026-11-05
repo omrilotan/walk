@@ -105,34 +105,63 @@ export async function exportAll() {
 }
 
 /**
- * Merge a backup into this database. Walks match by uid, or by start time for
- * walks without one; on a match the more recently updated copy wins.
+ * What importing a backup would do, without doing it: which of the file's walks
+ * are new here (`add`), newer in the file (`update`, with the copy they
+ * replace), or already here as the same or a newer copy (`keep`). A walk
+ * matches by uid, or by start time. `invalid` counts entries that aren't walks.
  */
-export async function importAll(data) {
+export function planImport(data, local) {
 	if (!Array.isArray(data?.sessions)) throw new Error("Not a Walk export file");
-	const local = await getSessions();
 	const byUid = new Map(local.filter((s) => s.uid).map((s) => [s.uid, s]));
 	const byStart = new Map(local.map((s) => [s.start, s]));
-	const result = { added: 0, updated: 0, skipped: 0 };
 
-	for (const { samples = [], id: _, ...session } of data.sessions) {
+	// The file's walks by uid; a walk the file repeats counts once, newest copy.
+	const incoming = new Map();
+	let invalid = 0;
+	for (const entry of data.sessions) {
+		const { samples, id: _, dirty: __, ...session } = entry ?? {};
 		if (typeof session.start !== "number" || !session.totals) {
-			result.skipped++;
+			invalid++;
 			continue;
 		}
 		session.uid ??= crypto.randomUUID();
-		const existing = byUid.get(session.uid) ?? byStart.get(session.start);
-		if (existing && (existing.updated ?? 0) >= (session.updated ?? 0)) {
-			result.skipped++;
-			continue;
+		const seen = incoming.get(session.uid);
+		if (!seen || (session.updated ?? 0) > (seen.session.updated ?? 0)) {
+			incoming.set(session.uid, { session, samples: Array.isArray(samples) ? samples : [] });
 		}
-		if (existing) await deleteSession(existing.id);
-		result[existing ? "updated" : "added"]++;
+	}
 
+	const plan = { add: [], update: [], keep: [], invalid };
+	for (const walk of incoming.values()) {
+		const existing = byUid.get(walk.session.uid) ?? byStart.get(walk.session.start);
+		if (!existing) plan.add.push(walk);
+		else if ((existing.updated ?? 0) >= (walk.session.updated ?? 0)) plan.keep.push(walk);
+		else plan.update.push({ ...walk, existing });
+	}
+	return plan;
+}
+
+/**
+ * Merges a backup into this database: adds the walks that aren't here and
+ * replaces older copies with the file's newer ones. It never deletes a walk.
+ *
+ * `fresh` gives every walk a new uid. Use it after a reset in a signed-in
+ * browser: the account keeps the old uids as deletions, and would delete the
+ * imported walks again on the next sync.
+ */
+export async function importAll(data, { fresh = false } = {}) {
+	const plan = planImport(data, await getSessions());
+	for (const { session, existing } of plan.update) {
+		// The copy here keeps its uid, so the account updates that walk too.
+		if (existing.uid) session.uid = existing.uid;
+		await deleteSession(existing.id);
+	}
+	for (const { session, samples } of [...plan.add, ...plan.update]) {
+		if (fresh) session.uid = crypto.randomUUID();
 		const id = await addSession(session);
 		const tx = (await open()).transaction("samples", "readwrite");
 		for (const sample of samples) tx.objectStore("samples").add({ ...sample, session: id });
 		await completed(tx);
 	}
-	return result;
+	return { added: plan.add.length, updated: plan.update.length, skipped: plan.keep.length + plan.invalid };
 }

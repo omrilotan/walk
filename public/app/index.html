@@ -378,7 +378,7 @@
 			</section>
 			<section class="menu-group" aria-label="Your walks">
 				<label class="menu-item">
-					<i class="ph ph-upload-simple"></i><span><b>Import</b><small>Merge walks from a backup file</small></span>
+					<i class="ph ph-upload-simple"></i><span><b>Import</b><small>Walks from a backup file: merge or replace</small></span>
 					<input id="import" type="file" accept="application/json,.json" hidden />
 				</label>
 				<button id="export" class="menu-item" type="button">
@@ -463,6 +463,37 @@
 				<button id="reset-confirm" class="btn danger" type="button"><i class="ph ph-trash"></i>Delete all walks</button>
 			</div>
 			<p id="reset-error" class="error small" role="alert"></p>
+		</dialog>
+		<dialog id="import-dialog" class="about import" aria-labelledby="import-title">
+			<form method="dialog" class="about-head">
+				<h2 id="import-title">Import walks</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<p id="import-source" class="import-source muted small"></p>
+			<dl class="import-counts">
+				<div><dt>New</dt><dd id="import-new"></dd></div>
+				<div><dt>Newer in file</dt><dd id="import-newer"></dd></div>
+				<div><dt>Already here</dt><dd id="import-here"></dd></div>
+			</dl>
+			<p id="import-invalid" class="muted small" hidden></p>
+			<div class="import-modes" role="radiogroup" aria-label="How to import">
+				<button id="import-merge" type="button" role="radio" data-mode="merge">
+					<i class="ph ph-arrows-merge"></i>
+					<span><b>Merge <span class="tag">Recommended</span></b><small id="import-merge-note"></small></span>
+				</button>
+				<button id="import-replace" type="button" role="radio" data-mode="replace">
+					<i class="ph ph-swap"></i>
+					<span><b>Replace all</b><small id="import-replace-note"></small></span>
+				</button>
+			</div>
+			<p id="import-warning" class="import-warning small" hidden></p>
+			<div class="reset-actions">
+				<button id="import-export" class="btn" type="button" hidden><i class="ph ph-download-simple"></i>Export a backup</button>
+				<span class="spacer"></span>
+				<button id="import-cancel" class="btn" type="button" autofocus>Cancel</button>
+				<button id="import-confirm" class="btn btn-primary" type="button"></button>
+			</div>
+			<p id="import-error" class="error small" role="alert"></p>
 		</dialog>
 		<dialog id="agent-dialog" class="about agents" aria-labelledby="agent-title">
 			<form method="dialog" class="about-head">

@@ -1,4 +1,4 @@
-import { deleteSession, exportAll, getSessions, getSetting, importAll, setSetting } from "./db.js";
+import { deleteSession, exportAll, getSessions, getSetting, importAll, planImport, setSetting } from "./db.js";
 import { Pad } from "./pad.js";
 import { areaChart, barChart, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
@@ -512,15 +512,132 @@ async function exportCsv() {
 	download(`walks-${today()}.csv`, rows.map((r) => r.join(",")).join("\n"), "text/csv");
 }
 
+// ---------------------------------------------------------------- import
+
+// The file being imported, between picking it and choosing how.
+const importing = { data: null, plan: null, mode: "merge" };
+
+const walkCount = (n) => `${int.format(n)} ${n === 1 ? "walk" : "walks"}`;
+
+/** Reads the file, then asks how to import it: merge (the default) or replace. */
 async function importHistory(file) {
+	let data, plan;
 	try {
-		const result = await importAll(JSON.parse(await file.text()));
-		message(`Imported: ${result.added} new, ${result.updated} updated, ${result.skipped} already here.`);
+		data = JSON.parse(await file.text());
+		plan = planImport(data, await getSessions());
+	} catch (error) {
+		return message(`Import failed: ${error instanceof SyntaxError ? "not a Walk export file" : error.message}.`);
+	}
+	if (!plan.add.length && !plan.update.length && !plan.keep.length) {
+		return message("Import failed: there are no walks in this file.");
+	}
+	const exported = new Date(data.exported);
+	$("#import-source").textContent = [
+		file.name,
+		Number.isNaN(exported.getTime()) ? null : `exported ${shortDate.format(exported)}`,
+	]
+		.filter(Boolean)
+		.join(", ");
+	Object.assign(importing, { data, plan, mode: plan.add.length || plan.update.length ? "merge" : "replace" });
+	if (!canReplace()) importing.mode = "merge";
+	$("#import-error").textContent = "";
+	renderImport();
+	$("#import-dialog").showModal();
+}
+
+const canReplace = () => !tracker.session && ui.sessions.length > 0;
+
+function renderImport() {
+	const { plan, mode } = importing;
+	const changes = plan.add.length + plan.update.length;
+	const total = changes + plan.keep.length;
+	const here = ui.sessions.length;
+
+	$("#import-new").textContent = int.format(plan.add.length);
+	$("#import-newer").textContent = int.format(plan.update.length);
+	$("#import-here").textContent = int.format(plan.keep.length);
+	const invalid = $("#import-invalid");
+	invalid.hidden = !plan.invalid;
+	invalid.textContent = `${int.format(plan.invalid)} ${plan.invalid === 1 ? "entry" : "entries"} in the file ${plan.invalid === 1 ? "isn't a walk" : "aren't walks"}, and will be skipped.`;
+
+	const adds = [plan.add.length && `adds ${walkCount(plan.add.length)}`, plan.update.length && `updates ${int.format(plan.update.length)}`]
+		.filter(Boolean)
+		.join(" and ");
+	$("#import-merge-note").textContent = changes
+		? `${adds[0].toUpperCase()}${adds.slice(1)}. Nothing here is deleted.`
+		: "Nothing to add: every walk in the file is already here.";
+	$("#import-replace-note").textContent = tracker.session
+		? "Stop the walk first."
+		: here
+			? `Deletes the ${walkCount(here)} here, then imports the file's ${int.format(total)}.`
+			: "Nothing here to replace.";
+	$("#import-replace").disabled = !canReplace();
+
+	for (const button of document.querySelectorAll(".import-modes [data-mode]")) {
+		button.setAttribute("aria-checked", String(button.dataset.mode === mode));
+	}
+
+	const replacing = mode === "replace";
+	const warning = $("#import-warning");
+	warning.hidden = !replacing;
+	warning.replaceChildren(
+		Object.assign(document.createElement("i"), { className: "ph-fill ph-warning" }),
+		document.createTextNode(
+			signedIn()
+				? "This deletes all your walks: here, in your Walk account, and in your other signed-in browsers when they next sync. It can't be undone."
+				: "This deletes the walks saved in this browser, with their per-second readings. It can't be undone.",
+		),
+	);
+	$("#import-export").hidden = !replacing;
+
+	const confirm = $("#import-confirm");
+	confirm.classList.toggle("danger", replacing);
+	confirm.disabled = replacing ? !canReplace() : !changes;
+	confirm.replaceChildren(
+		Object.assign(document.createElement("i"), { className: replacing ? "ph ph-swap" : "ph ph-arrows-merge" }),
+		replacing ? `Replace with ${walkCount(total)}` : changes ? `Import ${walkCount(changes)}` : "Nothing to import",
+	);
+}
+
+async function confirmImport() {
+	const button = $("#import-confirm");
+	button.disabled = true;
+	$("#import-error").textContent = "";
+	try {
+		let result;
+		if (importing.mode === "replace") {
+			if (tracker.session) throw new Error("Stop the walk before replacing your walks.");
+			await resetAll();
+			// Signed in, the account now keeps the old walks' uids as deletions:
+			// the imported walks get new ones, or the next sync would delete them.
+			result = await importAll(importing.data, { fresh: signedIn() });
+			message(`Replaced: ${walkCount(result.added)} imported.`);
+		} else {
+			result = await importAll(importing.data);
+			message(`Imported: ${result.added} new, ${result.updated} updated, ${result.skipped} already here.`);
+		}
+		$("#import-dialog").close();
 		await loadSessions();
 		syncNow();
 	} catch (error) {
-		message(`Import failed: ${error.message}`);
+		$("#import-error").textContent = `Import failed: ${error.message}`;
+		button.disabled = false;
+		await loadSessions();
 	}
+}
+
+function wireImport() {
+	const dialog = $("#import-dialog");
+	dialog.addEventListener("close", () => Object.assign(importing, { data: null, plan: null }));
+	$(".import-modes").addEventListener("click", (event) => {
+		const button = event.target.closest("[data-mode]");
+		if (!button || button.disabled || !importing.plan) return;
+		importing.mode = button.dataset.mode;
+		renderImport();
+	});
+	$("#import-cancel").addEventListener("click", () => dialog.close());
+	$("#import-export").addEventListener("click", exportHistory);
+	$("#import-confirm").addEventListener("click", confirmImport);
 }
 
 // ---------------------------------------------------------------- account dialog
@@ -992,7 +1109,7 @@ async function init() {
 
 	const menu = $("#menu");
 	$("#menu-btn").addEventListener("click", () => menu.showModal());
-	for (const dialog of [menu, $("#about"), $("#reset-dialog")]) {
+	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog")]) {
 		dialog.addEventListener("click", (event) => {
 			if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
 		});
@@ -1013,6 +1130,7 @@ async function init() {
 	wireAccount();
 	wireAgent();
 	wireTimer();
+	wireImport();
 	$("#connect").addEventListener("click", actions.connect);
 	$("#start").addEventListener("click", actions.start);
 	$("#pause").addEventListener("click", actions.pause);
