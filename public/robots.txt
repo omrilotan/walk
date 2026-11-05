@@ -4,6 +4,15 @@
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
+
+# Endpoints, not pages: sync, sign-in, and the MCP server (assistants reach it
+# through their own connectors, not by crawling).
 Disallow: /api/
 Disallow: /oauth/
+Disallow: /authorize
+Disallow: /token
+Disallow: /register
+Disallow: /mcp
+
 Sitemap: https://walk.omrilotan.com/sitemap.xml
+# LLMs: https://walk.omrilotan.com/llms.txt
