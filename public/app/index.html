@@ -145,47 +145,31 @@
 					</div>
 				</div>
 
+				<!-- The action zone, in order: controls, timer, target speed, presets. -->
 				<div class="control-band">
-					<div class="transport">
-						<button id="start" class="btn-primary xl" type="button" disabled>
-							<i class="ph-fill ph-play"></i><span>Start</span>
-						</button>
-						<button id="pause" class="btn-soft xl" type="button" disabled>
-							<i class="ph-fill ph-pause"></i><span>Pause</span>
-						</button>
-						<button id="stop" class="btn-soft xl stop" type="button" disabled>
-							<i class="ph-fill ph-stop"></i><span>Stop</span>
-						</button>
-					</div>
-
-					<form id="speed-form" class="speed-control">
-						<label for="speed" class="label">Target speed</label>
-						<div class="stepper">
-							<button type="button" id="slower" class="step" aria-label="Slower by 0.5">
-								<i class="ph-bold ph-minus"></i>
-							</button>
-							<div class="speed-field">
-								<input id="speed" type="number" inputmode="decimal" min="1" max="6" step="0.1" value="3.0" />
-								<span>km/h</span>
-							</div>
-							<button type="button" id="faster" class="step" aria-label="Faster by 0.5">
-								<i class="ph-bold ph-plus"></i>
-							</button>
-							<button type="submit" class="btn-primary set">Set</button>
+					<section class="band-section transport-section" aria-labelledby="controls-label">
+						<div class="band-head">
+							<span class="label" id="controls-label"><i class="ph ph-play-pause"></i>Controls</span>
 						</div>
-					</form>
-
-					<div class="presets-row">
-						<span class="label">Presets</span>
-						<div id="presets" class="chips"></div>
-						<button id="save-preset" class="chip-add" type="button">
-							<i class="ph-bold ph-plus"></i>Save current
-						</button>
-					</div>
+						<div class="transport">
+							<button id="start" class="btn-primary xl" type="button" disabled>
+								<i class="ph-fill ph-play"></i><span>Start</span>
+							</button>
+							<button id="pause" class="btn-soft xl" type="button" disabled>
+								<i class="ph-fill ph-pause"></i><span>Pause</span>
+							</button>
+							<button id="stop" class="btn-soft xl stop" type="button" disabled>
+								<i class="ph-fill ph-stop"></i><span>Stop</span>
+							</button>
+						</div>
+					</section>
 
 					<!-- The walk timer (timer.js): chime or pause after so many minutes or km of this walk. -->
-					<div id="timer" class="timer" data-kind="off" data-state="idle">
-						<span class="label" id="timer-label"><i class="ph ph-hourglass-medium"></i>Timer</span>
+					<section id="timer" class="band-section timer" data-kind="off" data-state="idle" aria-labelledby="timer-label">
+						<div class="band-head">
+							<span class="label" id="timer-label"><i class="ph ph-hourglass-medium"></i>Timer</span>
+							<span id="timer-left" class="timer-left"></span>
+						</div>
 						<div class="seg timer-kind" role="radiogroup" aria-labelledby="timer-label">
 							<button type="button" role="radio" data-kind="off">Off</button>
 							<button type="button" role="radio" data-kind="time">Time</button>
@@ -205,9 +189,39 @@
 								<button type="button" role="radio" data-end="chime"><i class="ph-bold ph-bell-simple-ringing"></i>Chime</button>
 								<button type="button" role="radio" data-end="pause"><i class="ph-fill ph-pause"></i><span>Pause<span class="wide-only"> belt</span></span></button>
 							</div>
-							<span id="timer-left" class="timer-left"></span>
 						</div>
-					</div>
+					</section>
+
+					<form id="speed-form" class="band-section speed-control">
+						<div class="band-head">
+							<label for="speed" class="label"><i class="ph ph-gauge"></i>Target speed</label>
+						</div>
+						<div class="stepper">
+							<button type="button" id="slower" class="step" aria-label="Slower by 0.5">
+								<i class="ph-bold ph-minus"></i>
+							</button>
+							<div class="speed-field">
+								<input id="speed" type="number" inputmode="decimal" min="1" max="6" step="0.1" value="3.0" />
+								<span>km/h</span>
+							</div>
+							<button type="button" id="faster" class="step" aria-label="Faster by 0.5">
+								<i class="ph-bold ph-plus"></i>
+							</button>
+							<button type="submit" class="btn-primary set">Set</button>
+						</div>
+					</form>
+
+					<section class="band-section presets-row" aria-labelledby="presets-label">
+						<div class="band-head">
+							<span class="label" id="presets-label"><i class="ph ph-lightning"></i>Presets</span>
+						</div>
+						<div class="preset-list">
+							<div id="presets" class="chips"></div>
+							<button id="save-preset" class="chip-add" type="button">
+								<i class="ph-bold ph-plus"></i>Save current
+							</button>
+						</div>
+					</section>
 
 					<!-- An agent in this browser asks before starting the belt (agent.js). -->
 					<div id="agent" class="agent" hidden>

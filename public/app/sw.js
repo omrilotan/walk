@@ -7,7 +7,7 @@
 // Walk, and the cached copy when offline. Everything is served from Walk's own
 // address: no third-party requests.
 
-const VERSION = "walk-2026-11-05";
+const VERSION = "walk-2026-11-05b";
 
 const PRECACHE = [
 	"/app/",

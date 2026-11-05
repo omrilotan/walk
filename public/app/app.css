@@ -512,37 +512,81 @@ body[data-state="starting"] #speed-now {
 	opacity: 0.85;
 }
 
-/* control band: the action zone */
+/*
+ * Control band: the action zone. Sections in order: controls, timer, target
+ * speed, presets. Phones stack them. Wider screens read them down two
+ * columns: controls and timer on the left, speed and presets on the right.
+ */
 
 .control-band {
 	grid-area: controls;
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	grid-template-areas:
-		"transport speed"
-		"presets presets"
-		"timer timer";
-	gap: 12px 24px;
-	align-items: end;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
 	min-width: 0;
-	padding: 14px 16px;
+	padding: 12px;
 	background: var(--surface-2);
 	border-top: 1px solid var(--line);
 }
 
-.transport {
-	grid-area: transport;
+.band-section {
 	display: grid;
-	grid-template-columns: minmax(150px, auto) auto auto;
+	align-content: start;
+	gap: 8px;
+	min-width: 0;
+	margin: 0;
+}
+
+.band-section + .band-section {
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+
+.band-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 18px;
+}
+
+.band-head .label i {
+	font-size: 14px;
+}
+
+.transport {
+	display: grid;
+	grid-template-columns: 1.3fr 1fr 1fr;
 	gap: 6px;
 }
 
-.speed-control {
-	grid-area: speed;
-	display: grid;
-	gap: 4px;
-	justify-self: end;
-	min-width: 0;
+@media (min-width: 720px) {
+	.control-band {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-areas:
+			"transport speed"
+			"timer presets"
+			"agent agent";
+		gap: 14px 32px;
+		padding: 16px;
+	}
+	.transport-section {
+		grid-area: transport;
+	}
+	.timer {
+		grid-area: timer;
+	}
+	.band-section.speed-control {
+		grid-area: speed;
+		padding-top: 0;
+		border-top: 0;
+	}
+	.presets-row {
+		grid-area: presets;
+	}
+	.agent {
+		grid-area: agent;
+	}
 }
 
 .stepper {
@@ -613,23 +657,14 @@ body[data-state="starting"] #speed-now {
 	font-size: 17px;
 }
 
-.presets-row {
-	grid-area: presets;
+.preset-list {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
 	gap: 6px;
-	min-width: 0;
-}
-
-.presets-row > .label {
-	margin-right: 4px;
 }
 
 .chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
+	display: contents; /* the chips and Save current wrap as one row */
 }
 
 .chip {
@@ -694,30 +729,27 @@ body[data-state="starting"] #speed-now {
 	color: var(--text);
 }
 
-/* walk timer: a row of its own under the presets */
+/* walk timer: sized by its own width (container queries), so it fits a
+   phone and a half-width column alike */
 
 .timer {
-	grid-area: timer;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 8px;
-	min-width: 0;
-	padding-top: 12px;
-	border-top: 1px solid var(--line);
+	container-type: inline-size;
 }
 
-.timer > .label {
-	margin-right: 2px;
+.timer-kind {
+	display: flex;
+}
+
+.timer-kind button,
+.timer-end button {
+	flex: 1;
 }
 
 .timer-set {
-	display: flex;
-	flex: 1;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	align-items: center;
-	gap: 8px;
-	min-width: 0;
+	gap: 6px;
 }
 
 .timer[data-kind="off"] .timer-set {
@@ -726,7 +758,7 @@ body[data-state="starting"] #speed-now {
 
 .seg {
 	display: inline-flex;
-	height: 40px;
+	height: 44px;
 	background: var(--surface);
 	border: 1px solid var(--line);
 }
@@ -766,13 +798,13 @@ body[data-state="starting"] #speed-now {
 
 .timer-amount {
 	display: grid;
-	grid-template-columns: 40px minmax(0, 1fr) 40px;
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
 	gap: 4px;
 }
 
 .timer-amount .step {
-	width: 40px;
-	height: 40px;
+	width: 44px;
+	height: 44px;
 	font-size: 15px;
 }
 
@@ -782,7 +814,7 @@ body[data-state="starting"] #speed-now {
 	justify-content: center;
 	gap: 4px;
 	min-width: 0;
-	height: 40px;
+	height: 44px;
 	padding: 0 10px;
 	cursor: text;
 	background: var(--surface);
@@ -799,7 +831,7 @@ body[data-state="starting"] #speed-now {
 	font: inherit;
 	font-size: 20px;
 	font-weight: 700;
-	line-height: 38px;
+	line-height: 42px;
 	letter-spacing: -0.02em;
 	text-align: right;
 	color: var(--text);
@@ -820,6 +852,7 @@ body[data-state="starting"] #speed-now {
 }
 
 .timer-then {
+	display: none;
 	font-size: 13px;
 	color: var(--muted);
 }
@@ -827,9 +860,8 @@ body[data-state="starting"] #speed-now {
 .timer-left {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
-	margin-left: auto;
-	font-size: 15px;
+	gap: 4px;
+	font-size: 13px;
 	font-weight: 700;
 	white-space: nowrap;
 	color: var(--accent);
@@ -880,67 +912,50 @@ body[data-state="starting"] #speed-now {
 	opacity: 1;
 }
 
-@media (max-width: 600px) {
-	/* Phones: Timer and the kind on one line, the amount and the ending under it. */
-	.timer {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		padding-top: 10px;
-	}
-	.seg button {
-		flex: 1;
-		padding: 0 6px;
-		font-size: 13px;
-	}
+@container (min-width: 460px) {
 	.timer-set {
-		grid-column: 1 / -1;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr) auto auto;
 	}
-	.timer-amount {
-		grid-template-columns: 36px minmax(0, 1fr) 36px;
-		gap: 3px;
-	}
-	.timer-amount .step {
-		width: 36px;
-	}
-	.timer-field {
-		padding: 0 8px;
-	}
-	.timer-field input {
-		font-size: 18px;
-	}
-	.timer-left {
-		grid-column: 1 / -1;
-		margin-left: 0;
-		font-size: 14px;
-	}
-	.wide-only,
 	.timer-then {
-		display: none;
+		display: block;
 	}
 }
 
-@media (max-width: 380px) {
-	.timer-end i {
-		display: none;
-	}
-	.timer-end button {
+@container (max-width: 420px) {
+	.seg button {
 		padding: 0 8px;
 	}
 	.timer-amount {
-		grid-template-columns: 34px minmax(0, 1fr) 34px;
+		grid-template-columns: 38px minmax(0, 1fr) 38px;
 		gap: 3px;
 	}
 	.timer-amount .step {
-		width: 34px;
+		width: 38px;
 	}
 	.timer-field {
 		gap: 2px;
 		padding: 0 6px;
 	}
 	.timer-field input {
-		font-size: 17px;
+		font-size: 18px;
+	}
+	.wide-only {
+		display: none;
+	}
+}
+
+@container (max-width: 330px) {
+	.timer-set {
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+	.timer-end i {
+		display: none;
+	}
+	.timer-end button {
+		padding: 0 7px;
+	}
+	.timer-field input {
+		font-size: 16px;
 	}
 }
 
@@ -1579,16 +1594,6 @@ kbd {
 	}
 }
 
-@media (max-width: 1040px) {
-	.control-band {
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-areas: "transport" "speed" "presets" "timer";
-	}
-	.speed-control {
-		justify-self: stretch;
-	}
-}
-
 @media (max-width: 860px) {
 	.live {
 		grid-template-columns: minmax(0, 1fr);
@@ -1649,13 +1654,6 @@ kbd {
 	.spark {
 		display: none;
 	}
-	.control-band {
-		gap: 10px;
-		padding: 12px;
-	}
-	.transport {
-		grid-template-columns: 1.3fr 1fr 1fr;
-	}
 	.xl {
 		gap: 6px;
 		padding: 0 6px;
@@ -1672,13 +1670,6 @@ kbd {
 	}
 	.btn-primary.set {
 		padding: 0 14px;
-	}
-	.speed-control > .label,
-	.presets-row > .label {
-		display: none;
-	}
-	.chips {
-		display: contents;
 	}
 	.metric {
 		gap: 4px;
@@ -2197,4 +2188,20 @@ kbd {
 
 .consent a {
 	color: var(--accent);
+}
+
+@media (max-width: 380px) {
+	/* The smallest phones: keep the whole target speed in view. */
+	.stepper {
+		grid-template-columns: 44px minmax(0, 1fr) 44px auto;
+	}
+	.speed-field {
+		padding: 0 8px;
+	}
+	.speed-field input {
+		font-size: 24px;
+	}
+	.btn-primary.set {
+		padding: 0 12px;
+	}
 }
