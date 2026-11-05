@@ -319,15 +319,46 @@ button:active:not(:disabled),
 	font-size: 11px;
 }
 
+/* The walker: the logo's A with a head. Colours follow the theme's accent. */
 .mark {
 	display: grid;
 	place-items: center;
 	flex: none;
 	width: 32px;
 	height: 32px;
-	font-size: 18px;
-	color: #fff;
-	background: #16a085;
+	color: var(--on-accent);
+	background: var(--accent);
+}
+
+.mark-walker {
+	width: auto;
+	height: 21px;
+	fill: currentColor;
+}
+
+/* WALK, with the walker as its A. */
+.wordmark {
+	display: block;
+	width: auto;
+	height: 20px;
+	fill: currentColor;
+}
+
+.wordmark-walker {
+	fill: var(--accent);
+}
+
+.brand-name .wordmark {
+	height: 26px;
+	margin-bottom: 5px;
+}
+
+.about-head .wordmark {
+	height: 30px;
+}
+
+#about .about-head {
+	margin-bottom: 16px;
 }
 
 .notice {

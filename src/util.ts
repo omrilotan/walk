@@ -57,7 +57,8 @@ export function page(title: string, body: string, status = 200, script?: string)
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="robots" content="noindex" />
 		<title>${escapeHtml(title)} | Walk</title>
-		<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
 		<link rel="stylesheet" href="/app/app.css" />
 		<link rel="stylesheet" href="/app/plain.css" />
 		${script ? `<script type="module" src="${escapeHtml(script)}"></script>` : ""}

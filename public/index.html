@@ -146,7 +146,8 @@
 			}
 		</script>
 		<link rel="manifest" href="/manifest.webmanifest" />
-		<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<link rel="stylesheet" href="/vendor/phosphor/regular.css" />
 		<link rel="stylesheet" href="/vendor/phosphor/bold.css" />
@@ -166,14 +167,20 @@
 				padding: 32px 0 12px;
 			}
 
-			/* A soft accent glow behind the headline. */
-			.hero::before {
+			/* A soft accent glow behind the header and headline. It spans the whole
+			   window from the top, and fades out before its own edges, so it never
+			   shows a line where it starts or stops. */
+			body::before {
 				position: absolute;
-				inset: -40px -10vw auto;
+				inset: 0 0 auto;
 				z-index: -1;
-				height: 420px;
+				height: 640px;
 				content: "";
-				background: radial-gradient(60% 70% at 20% 30%, var(--accent-soft), transparent 70%);
+				background: radial-gradient(
+					min(1000px, 120vw) 480px at max(25%, calc(50% - 260px)) 140px,
+					var(--accent-soft),
+					transparent 70%
+				);
 				pointer-events: none;
 			}
 
@@ -614,8 +621,7 @@
 	<body>
 		<header class="top">
 			<a class="brand" href="/app/" style="color: inherit; text-decoration: none">
-				<span class="mark"><i class="ph-bold ph-person-simple-walk"></i></span>
-				<span class="brand-name">Walk<small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
+				<span class="brand-name"><svg class="wordmark" viewBox="76 90 674 239" role="img" aria-label="Walk"><path d="M76 162H119L136 256 156 162H193L214 256 231 162H274L240 329H194L174 243 156 329H110Z"/><g class="wordmark-walker"><path transform="translate(265 329)" d="M61-167H102L150-34H190V0H116L81-112 57-34H87V0H0Z"/><circle cx="379" cy="117" r="27"/></g><path transform="translate(10 0)" d="M471 162H514V294H582V329H471ZM598 162H642V229L687 162H740L686 236 740 329H688L657 272 642 287V329H598Z"/></svg><small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
 			</a>
 			<span class="spacer"></span>
 			<button id="theme" class="icon-btn" type="button" title="Theme: auto">

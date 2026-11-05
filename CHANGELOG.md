@@ -6,6 +6,8 @@ Walk is a web app, so changes are listed by date, not version.
 
 - Walk timer: set any number of minutes, or km, for this walk. When it's done, Walk chimes, or pauses the belt and chimes; you choose. The Time or Distance tile fills up as you go, and the timer shows what's left. It counts the walk's own totals, so pauses don't count. An AI agent in the browser can set it too.
 - Import asks how: merge (recommended: adds new walks, updates older copies, deletes nothing) or replace all (deletes every walk here and in your account, then imports the file). Before you choose, it shows how many walks are new, newer in the file, or already here.
+- New logo: WALK, with the A drawn as a person walking. It's in the app's header, the About window and the home page, with a new app icon and a sharper favicon for small sizes. Android gets a home-screen icon that fits its round crop.
+- The home page's soft green glow now runs from the top of the window, with no visible edge.
 - Fixed: importing a newer copy of a walk that matched by start time now updates that walk in your account, instead of adding a second one.
 
 ## 2026-11-04
