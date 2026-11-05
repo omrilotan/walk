@@ -532,14 +532,14 @@ async function importHistory(file) {
 		return message("Import failed: there are no walks in this file.");
 	}
 	const exported = new Date(data.exported);
-	$("#import-source").textContent = [
+	$("#import-source span").textContent = [
 		file.name,
 		Number.isNaN(exported.getTime()) ? null : `exported ${shortDate.format(exported)}`,
 	]
 		.filter(Boolean)
 		.join(", ");
-	Object.assign(importing, { data, plan, mode: plan.add.length || plan.update.length ? "merge" : "replace" });
-	if (!canReplace()) importing.mode = "merge";
+	// Always starts on merge: replacing is a choice, never a default.
+	Object.assign(importing, { data, plan, mode: "merge" });
 	$("#import-error").textContent = "";
 	renderImport();
 	$("#import-dialog").showModal();
@@ -547,25 +547,41 @@ async function importHistory(file) {
 
 const canReplace = () => !tracker.session && ui.sessions.length > 0;
 
+/** "This file has 8 walks: 2 new, 1 newer than here and 5 already here." */
+function importSummary({ add, update, keep, invalid }) {
+	const total = add.length + update.length + keep.length;
+	const bold = (text) => Object.assign(document.createElement("b"), { textContent: text });
+	const parts = [];
+	if (add.length || update.length) {
+		parts.push(`This file has ${walkCount(total)}: `);
+		const counts = [
+			add.length && bold(`${int.format(add.length)} new`),
+			update.length && bold(`${int.format(update.length)} newer than here`),
+			keep.length && `${int.format(keep.length)} already here`,
+		].filter(Boolean);
+		counts.forEach((count, i) => parts.push(i === 0 ? "" : i === counts.length - 1 ? " and " : ", ", count));
+		parts.push(".");
+	} else {
+		parts.push(total === 1 ? "The walk in this file is already here." : `All ${walkCount(total)} in this file are already here.`);
+	}
+	if (invalid) parts.push(` ${int.format(invalid)} ${invalid === 1 ? "entry isn't a walk" : "entries aren't walks"}, and will be skipped.`);
+	return parts;
+}
+
 function renderImport() {
 	const { plan, mode } = importing;
 	const changes = plan.add.length + plan.update.length;
 	const total = changes + plan.keep.length;
 	const here = ui.sessions.length;
 
-	$("#import-new").textContent = int.format(plan.add.length);
-	$("#import-newer").textContent = int.format(plan.update.length);
-	$("#import-here").textContent = int.format(plan.keep.length);
-	const invalid = $("#import-invalid");
-	invalid.hidden = !plan.invalid;
-	invalid.textContent = `${int.format(plan.invalid)} ${plan.invalid === 1 ? "entry" : "entries"} in the file ${plan.invalid === 1 ? "isn't a walk" : "aren't walks"}, and will be skipped.`;
+	$("#import-summary").replaceChildren(...importSummary(plan));
 
 	const adds = [plan.add.length && `adds ${walkCount(plan.add.length)}`, plan.update.length && `updates ${int.format(plan.update.length)}`]
 		.filter(Boolean)
 		.join(" and ");
 	$("#import-merge-note").textContent = changes
-		? `${adds[0].toUpperCase()}${adds.slice(1)}. Nothing here is deleted.`
-		: "Nothing to add: every walk in the file is already here.";
+		? `${adds[0].toUpperCase()}${adds.slice(1)}. Deletes nothing.`
+		: "Nothing new to add.";
 	$("#import-replace-note").textContent = tracker.session
 		? "Stop the walk first."
 		: here
@@ -578,25 +594,15 @@ function renderImport() {
 	}
 
 	const replacing = mode === "replace";
-	const warning = $("#import-warning");
-	warning.hidden = !replacing;
-	warning.replaceChildren(
-		Object.assign(document.createElement("i"), { className: "ph-fill ph-warning" }),
-		document.createTextNode(
-			signedIn()
-				? "This deletes all your walks: here, in your Walk account, and in your other signed-in browsers when they next sync. It can't be undone."
-				: "This deletes the walks saved in this browser, with their per-second readings. It can't be undone.",
-		),
-	);
-	$("#import-export").hidden = !replacing;
+	$("#import-warning").hidden = !replacing;
+	$("#import-warning-text").textContent = signedIn()
+		? "Can't be undone. Also deletes your walks in your Walk account and other signed-in browsers."
+		: "Can't be undone.";
 
 	const confirm = $("#import-confirm");
 	confirm.classList.toggle("danger", replacing);
 	confirm.disabled = replacing ? !canReplace() : !changes;
-	confirm.replaceChildren(
-		Object.assign(document.createElement("i"), { className: replacing ? "ph ph-swap" : "ph ph-arrows-merge" }),
-		replacing ? `Replace with ${walkCount(total)}` : changes ? `Import ${walkCount(changes)}` : "Nothing to import",
-	);
+	confirm.textContent = replacing ? "Replace all" : changes ? `Import ${walkCount(changes)}` : "Nothing to import";
 }
 
 async function confirmImport() {

@@ -469,27 +469,23 @@
 				<h2 id="import-title">Import walks</h2>
 				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
 			</form>
-			<p id="import-source" class="import-source muted small"></p>
-			<dl class="import-counts">
-				<div><dt>New</dt><dd id="import-new"></dd></div>
-				<div><dt>Newer in file</dt><dd id="import-newer"></dd></div>
-				<div><dt>Already here</dt><dd id="import-here"></dd></div>
-			</dl>
-			<p id="import-invalid" class="muted small" hidden></p>
+			<p id="import-source" class="import-source"><i class="ph ph-file-text"></i><span></span></p>
+			<p id="import-summary" class="import-summary"></p>
 			<div class="import-modes" role="radiogroup" aria-label="How to import">
 				<button id="import-merge" type="button" role="radio" data-mode="merge">
-					<i class="ph ph-arrows-merge"></i>
+					<span class="radio" aria-hidden="true"></span>
 					<span><b>Merge <span class="tag">Recommended</span></b><small id="import-merge-note"></small></span>
 				</button>
 				<button id="import-replace" type="button" role="radio" data-mode="replace">
-					<i class="ph ph-swap"></i>
+					<span class="radio" aria-hidden="true"></span>
 					<span><b>Replace all</b><small id="import-replace-note"></small></span>
 				</button>
 			</div>
-			<p id="import-warning" class="import-warning small" hidden></p>
-			<div class="reset-actions">
-				<button id="import-export" class="btn" type="button" hidden><i class="ph ph-download-simple"></i>Export a backup</button>
-				<span class="spacer"></span>
+			<p id="import-warning" class="import-warning" hidden>
+				<i class="ph-fill ph-warning"></i>
+				<span><span id="import-warning-text"></span> <button id="import-export" class="linkish" type="button">Export a backup first</button></span>
+			</p>
+			<div class="import-actions">
 				<button id="import-cancel" class="btn" type="button" autofocus>Cancel</button>
 				<button id="import-confirm" class="btn btn-primary" type="button"></button>
 			</div>
