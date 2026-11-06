@@ -246,14 +246,21 @@
 						</svg>
 						<div class="ring-center">
 							<span class="ring-value"><span id="today-distance">0.00</span><small>km</small></span>
-							<label class="goal">
-								of
-								<input id="goal" type="number" min="0.5" max="50" step="0.5" value="5" aria-label="Daily goal in km" />
-								km goal
-							</label>
+							<span class="goal">of <b id="goal-readout">5</b> km goal</span>
 						</div>
 					</div>
 					<p class="muted small" id="yesterday"></p>
+					<div class="goal-control">
+						<span class="label"><i class="ph ph-target"></i>Daily goal</span>
+						<div class="goal-stepper">
+							<button type="button" id="goal-less" class="goal-step" aria-label="Lower goal by 0.5 km"><i class="ph-bold ph-minus"></i></button>
+							<div class="goal-field">
+								<input id="goal" type="number" min="0.5" max="50" step="0.5" value="5" aria-label="Daily goal in km" />
+								<span>km</span>
+							</div>
+							<button type="button" id="goal-more" class="goal-step" aria-label="Raise goal by 0.5 km"><i class="ph-bold ph-plus"></i></button>
+						</div>
+					</div>
 				</div>
 
 				<div class="today-side">
@@ -358,6 +365,7 @@
 				<span>Not affiliated with or endorsed by PitPat.</span>
 			</footer>
 		</main>
+		<output id="toast" role="status" aria-live="polite" data-show="false"></output>
 		<dialog id="menu" class="menu" aria-label="Menu">
 			<section class="menu-group" aria-label="Sync">
 				<button id="menu-account" class="menu-item" type="button">

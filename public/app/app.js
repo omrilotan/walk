@@ -40,6 +40,8 @@ const ui = {
 	startMode: "ask", // agent starts: "ask" or "auto"
 	timer: DEFAULT_TIMER,
 	timerLast: null, // { key, value }: the walk's last count, to see the timer's target crossed
+	timerBase: { seconds: 0, distance: 0 }, // walk totals when the timer was last (re)armed
+	timerBaseUid: null, // the walk that baseline belongs to
 };
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -188,8 +190,8 @@ function renderLive({ status, session }) {
 		renderSpark();
 	}
 
-	renderTimerProgress(session?.totals ?? null);
 	checkTimer(session);
+	renderTimerProgress(session?.totals ?? null);
 
 	// Keep today's numbers moving during a walk without hammering the DB.
 	if (session && now - ui.dashAt > 5000) {
@@ -233,9 +235,25 @@ function renderHeadline() {
 
 function setTimer(changes) {
 	ui.timer = normalize({ ...ui.timer, ...changes });
+	// The timer counts from the moment you set it, not the walk's start:
+	// anchor the baseline to the walk's totals now (zero when not walking).
+	ui.timerBase = {
+		seconds: tracker.session?.totals.seconds ?? 0,
+		distance: tracker.session?.totals.distance ?? 0,
+	};
+	ui.timerBaseUid = tracker.session?.uid ?? null;
+	ui.timerLast = null; // re-arm the crossing check
+	askNotify();
 	renderTimer();
 	setSetting("timer", ui.timer);
 }
+
+/** Walk totals since the timer was armed; a fresh walk recounts from zero. */
+const sinceArmed = (totals) =>
+	totals && {
+		seconds: Math.max(0, totals.seconds - ui.timerBase.seconds),
+		distance: Math.max(0, totals.distance - ui.timerBase.distance),
+	};
 
 function renderTimer() {
 	const timer = ui.timer;
@@ -265,7 +283,8 @@ function renderTimer() {
 /** The timer's tile (Time or Distance) fills up; the timer row counts down. */
 function renderTimerProgress(totals) {
 	const timer = ui.timer;
-	const share = totals ? progress(timer, totals) : 0;
+	const t = sinceArmed(totals);
+	const share = t ? progress(timer, t) : 0;
 	for (const tile of document.querySelectorAll("[data-timer-kind]")) {
 		const on = tile.dataset.timerKind === timer.kind;
 		tile.toggleAttribute("data-timer", on);
@@ -276,12 +295,12 @@ function renderTimerProgress(totals) {
 
 	const box = $("#timer");
 	const left = $("#timer-left");
-	if (timer.kind === "off" || !totals) {
+	if (timer.kind === "off" || !t) {
 		box.dataset.state = "idle";
 		left.textContent = "";
 		return;
 	}
-	const remaining = goal(timer) - done(timer, totals);
+	const remaining = goal(timer) - done(timer, t);
 	if (remaining <= 0) {
 		box.dataset.state = "done";
 		left.innerHTML = `<i class="ph-bold ph-check"></i>Done`;
@@ -295,11 +314,20 @@ function renderTimerProgress(totals) {
 function checkTimer(session) {
 	if (!session) {
 		ui.timerLast = null;
+		ui.timerBaseUid = null;
+		ui.timerBase = { seconds: 0, distance: 0 };
 		return;
 	}
+	// A new walk recounts from its own start.
+	if (session.uid !== ui.timerBaseUid) {
+		ui.timerBase = { seconds: 0, distance: 0 };
+		ui.timerBaseUid = session.uid;
+		ui.timerLast = null;
+	}
+	const t = sinceArmed(session.totals);
 	const key = `${session.uid}:${ui.timer.kind}`;
 	const before = ui.timerLast?.key === key ? ui.timerLast.value : null;
-	const after = done(ui.timer, session.totals);
+	const after = done(ui.timer, t);
 	ui.timerLast = { key, value: after };
 	if (crossed(ui.timer, before, after)) timerDone();
 }
@@ -307,10 +335,42 @@ function checkTimer(session) {
 function timerDone() {
 	const what = `${describe(ui.timer)} done.`;
 	chime();
-	if (ui.timer.end === "pause" && pad.connected && isMoving()) {
-		pad.pause();
-		message(`${what} Belt paused.`);
-	} else message(what);
+	const paused = ui.timer.end === "pause" && pad.connected && isMoving();
+	if (paused) pad.pause();
+	const text = paused ? `${what} Belt paused.` : what;
+	message(text);
+	// On the page: an in-page banner. Not on the page: a system notification.
+	if (document.visibilityState === "visible") toast(text);
+	else desktopNotify(text);
+}
+
+// ---------------------------------------------------------------- notify
+
+let toastHide = null;
+
+/** A centred in-page banner for timer chimes, so the sound has a visible source. */
+function toast(text) {
+	const el = $("#toast");
+	el.innerHTML = `<i class="ph-bold ph-bell" aria-hidden="true"></i><span></span>`;
+	el.querySelector("span").textContent = text;
+	el.dataset.show = "true";
+	clearTimeout(toastHide);
+	toastHide = setTimeout(() => (el.dataset.show = "false"), 6000);
+}
+
+/** A system notification, for when Walk isn't the tab in front. */
+function desktopNotify(text) {
+	if (!("Notification" in window) || Notification.permission !== "granted") return;
+	try {
+		new Notification("Walk", { body: text, icon: "/icon-512.png", tag: "walk-timer", renotify: true });
+	} catch {}
+}
+
+/** Ask once, from a tap, when a timer is armed: permission needs a gesture. */
+function askNotify() {
+	if (ui.timer.kind === "off") return;
+	if (!("Notification" in window) || Notification.permission !== "default") return;
+	Notification.requestPermission().catch(() => {});
 }
 
 function wireTimer() {
@@ -367,6 +427,7 @@ function renderDashboard(sessions) {
 	ring.style.strokeDasharray = `${circumference}`;
 	ring.style.strokeDashoffset = `${circumference * (1 - progress)}`;
 	ring.dataset.done = String(progress >= 1);
+	$("#goal-readout").textContent = km(ui.goal);
 	$("#yesterday").textContent = `Yesterday: ${s.yesterday.distance.toFixed(2)} km`;
 
 	$("#today-walks").textContent = s.today.walks;
@@ -1003,7 +1064,7 @@ function timerInfo() {
 		amount: amount(timer),
 		unit: KINDS[timer.kind].unit,
 		atEnd: timer.end,
-		remaining: totals ? r2(Math.max(0, goal(timer) - done(timer, totals)) / (timer.kind === "time" ? 60 : 1)) : null,
+		remaining: totals ? r2(Math.max(0, goal(timer) - done(timer, sinceArmed(totals))) / (timer.kind === "time" ? 60 : 1)) : null,
 	};
 }
 
@@ -1187,11 +1248,15 @@ async function init() {
 		setTarget(Number($("#speed").value) || ui.target, { send: pad.connected });
 	});
 	$("#save-preset").addEventListener("click", () => savePresets([...ui.presets, ui.target]));
-	$("#goal").addEventListener("change", async () => {
-		ui.goal = Math.max(0.5, Number($("#goal").value) || 5);
+	const setGoal = async (km) => {
+		ui.goal = Math.min(50, Math.max(0.5, round1(km) || 5));
+		$("#goal").value = ui.goal;
 		await saveGoal(ui.goal);
 		renderDashboard(ui.sessions);
-	});
+	};
+	$("#goal").addEventListener("change", () => setGoal(Number($("#goal").value)));
+	$("#goal-less").addEventListener("click", () => setGoal(ui.goal - 0.5));
+	$("#goal-more").addEventListener("click", () => setGoal(ui.goal + 0.5));
 	$("#export").addEventListener("click", exportHistory);
 	$("#reset").addEventListener("click", openReset);
 	$("#reset-cancel").addEventListener("click", () => $("#reset-dialog").close());

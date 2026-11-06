@@ -5,6 +5,9 @@ Walk is a web app, so changes are listed by date, not version.
 ## 2026-11-06
 
 - Tap any day or week on the dashboard — a square in the activity grid, a week bar, or a day of this week — to open its full stats: distance, walks, time, steps and calories for that day or week.
+- The walk timer now counts from the moment you set it, not from the start of the walk. Change it (or switch off and back on) and it starts again from now, so you can set a fresh target mid-walk.
+- When a timer ends and Walk isn't the tab in front, you get a system notification. When it is in front, a banner slides in, so the chime always has a visible source.
+- The daily goal is now a clear − / + control under the today ring, instead of a small tucked-away field.
 
 ## 2026-11-05
 
