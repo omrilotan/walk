@@ -1,6 +1,6 @@
 import { deleteSession, exportAll, getSessions, getSetting, importAll, planImport, setSetting } from "./db.js";
 import { Pad } from "./pad.js";
-import { areaChart, barChart, heatmap } from "./charts.js";
+import { areaChart, barChart, detailData, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
 import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
@@ -388,7 +388,7 @@ function renderDashboard(sessions) {
 	$("#week-days").innerHTML = s.weekDays
 		.map(
 			(d) => `
-			<div class="day" data-today="${d.today}" data-future="${d.future}">
+			<div class="day" data-today="${d.today}" data-future="${d.future}"${d.walks ? ` role="button" tabindex="0" ${detailData(d, "day")}` : ""}>
 				<span class="day-name">${fmt.weekday.format(d.t)}</span>
 				<span class="day-bar"><span style="--h:${(d.distance / weekMax) * 100}%"></span></span>
 				<span class="day-value">${d.future || !d.distance ? "-" : km(d.distance)}</span>
@@ -426,6 +426,44 @@ function renderRecords(s) {
 			</div>`,
 		)
 		.join("");
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Open the day/week detail dialog from a clicked grid square, bar or day. */
+function openDetail(el) {
+	const d = el.dataset;
+	if (!d.detail) return;
+	const t = Number(d.t);
+	const walks = Number(d.walks);
+	const week = d.detail === "week";
+	$("#detail-title").textContent = week ? `Week of ${fmt.date.format(t)}` : fmt.full.format(new Date(t));
+	$("#detail-sub").textContent = week
+		? `${fmt.date.format(t)} – ${fmt.date.format(t + 6 * DAY_MS)}`
+		: `${int.format(walks)} ${walks === 1 ? "walk" : "walks"}`;
+	$("#detail-steps").textContent = int.format(Number(d.steps));
+	$("#detail-walks").textContent = int.format(walks);
+	$("#detail-time").textContent = minutes(Number(d.seconds));
+	$("#detail-distance").textContent = km(Number(d.distance));
+	$("#detail-calories").textContent = int.format(Number(d.calories));
+	$("#day-dialog").showModal();
+}
+
+function wireDetails() {
+	for (const surface of [$("#week-days"), $("#bars"), $("#heat")]) {
+		surface.addEventListener("click", (event) => {
+			const el = event.target.closest("[data-detail]");
+			if (el) openDetail(el);
+		});
+		surface.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			const el = event.target.closest("[data-detail]");
+			if (el) {
+				event.preventDefault();
+				openDetail(el);
+			}
+		});
+	}
 }
 
 function renderHistory(sessions) {
@@ -1115,7 +1153,7 @@ async function init() {
 
 	const menu = $("#menu");
 	$("#menu-btn").addEventListener("click", () => menu.showModal());
-	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog")]) {
+	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog"), $("#day-dialog")]) {
 		dialog.addEventListener("click", (event) => {
 			if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
 		});
@@ -1137,6 +1175,7 @@ async function init() {
 	wireAgent();
 	wireTimer();
 	wireImport();
+	wireDetails();
 	$("#connect").addEventListener("click", actions.connect);
 	$("#start").addEventListener("click", actions.start);
 	$("#pause").addEventListener("click", actions.pause);

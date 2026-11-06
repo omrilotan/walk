@@ -2,6 +2,10 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-06
+
+- Tap any day or week on the dashboard — a square in the activity grid, a week bar, or a day of this week — to open its full stats: distance, walks, time, steps and calories for that day or week.
+
 ## 2026-11-05
 
 - Walk timer: set any number of minutes, or km, for this walk. When it's done, Walk chimes, or pauses the belt and chimes; you choose. The Time or Distance tile fills up as you go, and the timer shows what's left. It counts the walk's own totals, so pauses don't count. An AI agent in the browser can set it too.

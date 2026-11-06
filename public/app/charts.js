@@ -2,6 +2,10 @@
 
 import { fmt } from "./format.js";
 
+/** Full totals as data-* attributes, so a click opens the day/week detail. */
+export const detailData = (d, kind) =>
+	`data-detail="${kind}" data-t="${d.t}" data-walks="${d.walks}" data-distance="${d.distance}" data-seconds="${d.seconds}" data-calories="${d.calories}" data-steps="${d.steps}"`;
+
 function smoothPath(points) {
 	// Catmull-Rom to cubic Bezier for a soft line through every point.
 	let d = `M${points[0][0]},${points[0][1]}`;
@@ -57,7 +61,7 @@ export function barChart(weeks) {
 			${weeks
 				.map(
 					(w, i) => `
-				<div class="bar" data-current="${i === weeks.length - 1}" title="Week of ${fmt.date.format(w.t)}: ${w.distance.toFixed(2)} km, ${w.walks} walks">
+				<div class="bar" data-current="${i === weeks.length - 1}"${w.walks ? ` role="button" tabindex="0" ${detailData(w, "week")}` : ""} title="Week of ${fmt.date.format(w.t)}: ${w.distance.toFixed(2)} km, ${w.walks} walks">
 					<span class="bar-fill" style="--h:${(w.distance / max) * 100}%"></span>
 					<span class="bar-label">${fmt.date.format(w.t)}</span>
 				</div>`,
@@ -91,7 +95,7 @@ export function heatmap(columns) {
 						`<div class="heat-col">${col
 							.map(
 								(c) =>
-									`<i data-level="${c.future ? "future" : level(c.minutes)}" title="${fmt.date.format(c.t)}: ${Math.round(c.minutes)} min"></i>`,
+									`<i data-level="${c.future ? "future" : level(c.minutes)}"${c.walks ? ` role="button" tabindex="0" ${detailData(c, "day")}` : ""} title="${fmt.date.format(c.t)}: ${Math.round(c.minutes)} min"></i>`,
 							)
 							.join("")}</div>`,
 				)

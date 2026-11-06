@@ -87,7 +87,7 @@ export function summarize(sessions, now = Date.now()) {
 	const heat = Array.from({ length: 26 }, (_, w) =>
 		Array.from({ length: 7 }, (_, d) => {
 			const t = addDays(heatStart, w * 7 + d);
-			return { t, minutes: day(t).seconds / 60, future: t > today };
+			return { t, ...day(t), minutes: day(t).seconds / 60, future: t > today };
 		}),
 	);
 

@@ -491,6 +491,23 @@
 			</div>
 			<p id="import-error" class="error small" role="alert"></p>
 		</dialog>
+		<dialog id="day-dialog" class="about day-detail" aria-labelledby="detail-title">
+			<form method="dialog" class="about-head">
+				<h2 id="detail-title">Day</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<p class="muted small" id="detail-sub"></p>
+			<div class="detail-hero">
+				<span class="label">Distance</span>
+				<span class="detail-hero-value"><span id="detail-distance">0</span><small>km</small></span>
+			</div>
+			<div class="detail-grid">
+				<div><span class="label">Walks</span><span class="stat" id="detail-walks">0</span></div>
+				<div><span class="label">Time</span><span class="stat" id="detail-time">0m</span></div>
+				<div><span class="label">Steps</span><span class="stat" id="detail-steps">0</span></div>
+				<div><span class="label">Calories</span><span class="stat"><span id="detail-calories">0</span><small>kcal</small></span></div>
+			</div>
+		</dialog>
 		<dialog id="agent-dialog" class="about agents" aria-labelledby="agent-title">
 			<form method="dialog" class="about-head">
 				<h2 id="agent-title">Connect your AI agent</h2>
