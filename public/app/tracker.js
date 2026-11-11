@@ -30,7 +30,7 @@ export class Tracker extends EventTarget {
 
 	async handle(status) {
 		const now = Date.now();
-		if (MOVING.has(status.state) && !this.session) await this.begin(now);
+		if (MOVING.has(status.state) && !this.session) await this.begin(now, status);
 		if (this.session && (MOVING.has(status.state) || status.state === "paused")) {
 			this.accumulate(status);
 			this.session.maxSpeed = Math.max(this.session.maxSpeed, status.speed);
@@ -53,7 +53,7 @@ export class Tracker extends EventTarget {
 		this.emit(status);
 	}
 
-	async begin(now) {
+	async begin(now, status) {
 		// Continue an unfinished walk (page reload, dropped connection).
 		const [latest] = await getSessions(1);
 		if (latest && !latest.end && now - latest.updated < RESUME_WITHIN_MS) {
@@ -63,17 +63,31 @@ export class Tracker extends EventTarget {
 			this.last = latest.raw ?? null;
 			return;
 		}
+		this.start(now, status);
+		this.session.id = await addSession(this.session);
+	}
+
+	/**
+	 * Open a new walk. While the belt is starting, the pad can still show the
+	 * last walk's distance and time before it resets them, so those counters
+	 * are the walk's zero, not progress: base is set to minus them. If the pad
+	 * then resets, accumulate() banks the drop and base returns to 0; if it
+	 * keeps counting, only the difference adds up. A walk that opens on a
+	 * running belt (Walk connected mid-walk) counts what the pad shows.
+	 */
+	start(now, status = {}) {
+		const stale = status.state === "starting";
+		const first = Object.fromEntries(COUNTERS.map((k) => [k, stale ? (status[k] ?? 0) : 0]));
 		this.session = {
 			uid: crypto.randomUUID(),
 			start: now,
 			updated: now,
 			end: null,
 			maxSpeed: 0,
-			base: Object.fromEntries(COUNTERS.map((k) => [k, 0])),
+			base: Object.fromEntries(COUNTERS.map((k) => [k, -first[k]])),
 			totals: Object.fromEntries(COUNTERS.map((k) => [k, 0])),
 		};
-		this.session.id = await addSession(this.session);
-		this.last = null;
+		this.last = stale ? first : null;
 	}
 
 	accumulate(status) {

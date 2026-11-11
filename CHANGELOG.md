@@ -2,6 +2,10 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-11
+
+- Fixed: a new walk could start with the previous walk's distance and time already on it, when the pad still showed them as the belt started. Each walk now counts only itself.
+
 ## 2026-11-06
 
 - Tap any day or week on the dashboard — a square in the activity grid, a week bar, or a day of this week — to open its full stats: distance, walks, time, steps and calories for that day or week.
