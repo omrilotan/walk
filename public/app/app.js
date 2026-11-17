@@ -1025,6 +1025,9 @@ const actions = {
 
 function onKey(event) {
 	if (event.target.closest("input, textarea, select")) return;
+	// A key pressed in an open window is that window's: Esc closes it, and
+	// must not also stop the belt.
+	if (document.querySelector("dialog[open]")) return;
 	if (!pad.connected) return;
 	const handlers = {
 		" ": () => (isMoving() ? actions.pause() : actions.start()),

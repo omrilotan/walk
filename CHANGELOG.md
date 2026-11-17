@@ -2,6 +2,12 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-17
+
+- About lists the keyboard shortcuts: Space to start or pause, ↑ and ↓ for speed, Esc to stop. The buttons say their key when you hover them.
+- Fixed: pressing Esc to close a window (About, the menu, sync) also stopped the belt. Shortcuts now wait until no window is open.
+- A small "Tip me" button in About, for anyone who wants to buy a coffee. It's a plain link to Ko-fi; nothing is loaded from Ko-fi.
+
 ## 2026-11-11
 
 - Fixed: a new walk could start with the previous walk's distance and time already on it, when the pad still showed them as the belt started. Each walk now counts only itself.

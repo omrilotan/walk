@@ -1600,6 +1600,128 @@ body[data-state="starting"] #speed-now {
 	border-color: var(--accent-hover);
 }
 
+/* The walking shortcuts, as About lists them. */
+.about-keys {
+	margin: 0 0 16px;
+}
+
+.about-keys h3 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 8px;
+	font-size: 15px;
+}
+
+.about-keys h3 > i {
+	color: var(--accent);
+}
+
+.keys {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 6px 12px;
+	align-items: center;
+	margin: 0 0 6px;
+	font-size: 14px;
+}
+
+.keys dt,
+.keys dd {
+	margin: 0;
+}
+
+.keys kbd {
+	font-size: 12px;
+}
+
+/* A tip, if someone wants to: the Ko-fi cup, drawn here, nothing loaded from Ko-fi. */
+.about-tip {
+	text-align: center;
+}
+
+a.tip,
+a.tip:visited,
+a.tip:active {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45em;
+	padding: 0.35em 1em 0.35em 0.55em;
+	border-radius: 999px;
+	color: var(--on-accent);
+	background: var(--accent);
+	box-shadow: 0 0.15em 0 color-mix(in srgb, var(--accent) 60%, #000);
+	font-size: 13px;
+	font-weight: 500;
+	text-decoration: none;
+	transition:
+		transform 0.15s,
+		box-shadow 0.15s;
+}
+
+a.tip svg {
+	width: auto;
+	height: 1.4em;
+	transform-origin: 50% 80%;
+	animation: tip-idle 7s ease-in-out 2s infinite;
+}
+
+a.tip:hover {
+	transform: translateY(-0.1em);
+	box-shadow: 0 0.25em 0 color-mix(in srgb, var(--accent) 60%, #000);
+}
+
+a.tip:hover svg {
+	animation: tip-wiggle 0.6s ease-in-out;
+}
+
+a.tip:active {
+	transform: translateY(0.1em);
+	box-shadow: 0 0.05em 0 color-mix(in srgb, var(--accent) 60%, #000);
+}
+
+a.tip:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+}
+
+@keyframes tip-wiggle {
+	25% {
+		transform: rotate(-12deg);
+	}
+	50% {
+		transform: rotate(10deg);
+	}
+	75% {
+		transform: rotate(-6deg);
+	}
+}
+
+@keyframes tip-idle {
+	0%,
+	88%,
+	100% {
+		transform: rotate(0);
+	}
+	91% {
+		transform: rotate(-12deg);
+	}
+	94% {
+		transform: rotate(10deg);
+	}
+	97% {
+		transform: rotate(-6deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	a.tip,
+	a.tip svg {
+		transition: none;
+		animation: none !important;
+	}
+}
+
 /* ---------------------------------------------------------------- footer */
 
 .foot {
