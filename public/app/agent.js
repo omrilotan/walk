@@ -3,7 +3,8 @@
 // Registered only where the browser offers a model context (document.modelContext,
 // or navigator.modelContext in older previews). Elsewhere this module does nothing.
 // The tools are also reachable under the old name, navigator.modelContext, for
-// agents that still look there (aliasLegacy).
+// agents that still look there (aliasLegacy), and as plain data on
+// window.walkTools for agents that run scripts in the page (plainSurface).
 //
 // Safety:
 // - Pause and stop always run right away.
@@ -199,11 +200,39 @@ export async function registerAgentTools(walk) {
 		}
 	}
 	aliasLegacy(context);
+	window.walkTools = plainSurface(
+		context,
+		tools.filter((tool) => registered.includes(tool.name)),
+	);
 	// For an agent that reads the console to find its way in.
 	console.info(
-		`Walk: ${registered.length} WebMCP tools on document.modelContext (${registered.join(", ")}). List them with getTools(), run one with executeTool(tool, input).`,
+		`Walk: ${registered.length} WebMCP tools on document.modelContext (${registered.join(", ")}). From a script, read window.walkTools.tools and run one with await window.walkTools.run(name, input): both give plain data. getTools() returns objects that hold the window and cannot be serialized.`,
 	);
 	return true;
+}
+
+/**
+ * The same tools as plain data, for an agent that works by running scripts in
+ * the page. The objects getTools() returns each hold the page's window, so
+ * returning them from a script fails ("Converting circular structure to JSON")
+ * or comes back empty, and the agent concludes there are no tools.
+ *
+ * tools is a plain list (name, description, inputSchema). run() goes through
+ * the browser's own executeTool where there is one, so a tool behaves exactly
+ * as it does for any other agent, and always answers with a string.
+ */
+export function plainSurface(context, tools) {
+	const names = tools.map((tool) => tool.name);
+	return {
+		tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })),
+		async run(name, input = {}) {
+			const own = tools.find((tool) => tool.name === name);
+			if (!own) return `No tool named ${name}. Tools: ${names.join(", ")}.`;
+			const listed = context.executeTool && (await context.getTools?.())?.find((tool) => tool.name === name);
+			const result = listed ? await context.executeTool(listed, input) : await own.execute(input, {});
+			return typeof result === "string" ? result : JSON.stringify(result ?? null);
+		},
+	};
 }
 
 /**

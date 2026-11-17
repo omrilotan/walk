@@ -129,7 +129,7 @@ The read-only tools can be set to "Always allow" in your assistant. A walk appea
 
 You always press Connect yourself; an assistant can't pair the pad.
 
-If your assistant says it can't find Walk's tools, tell it they are on `document.modelContext`: `getTools()` lists them and `executeTool(tool, input)` runs one. Walk also answers under the older name, `navigator.modelContext`.
+If your assistant says it can't find Walk's tools, tell it to use `window.walkTools`: `walkTools.tools` lists them and `await walkTools.run(name, input)` runs one. That is the same set of tools as plain data, for an assistant that works by running scripts in the page, such as Claude for Chrome. The tools themselves are on `document.modelContext` (`getTools()`, `executeTool(tool, input)`), and Walk also answers under the older name, `navigator.modelContext`.
 
 ![A six-panel stick-figure comic of a walk with an AI agent. 10:40: "Walk me while I clear email. Easy pace." The laptop asks "Start at 3.0 km/h?" Walk asks first: the screen reads "An agent wants to start the belt at 3.0 km/h" and the walker taps Allow. 11:00: the phone rings, "Pause for the call." "Paused." 12:32: the laptop asks "400 m to your goal. Eight more minutes?" and the walker answers "Keep going." 12:40: arms up, "Stop." "Stopped. 5.0 km, saved." Friday, coffee in hand: the laptop asks "Your goal was hit every day this week. Raise it to 6?" and the walker answers "Nope."](public/images/agent-comic.jpg)
 

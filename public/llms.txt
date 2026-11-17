@@ -14,7 +14,7 @@ Every page below is also available as Markdown: ask with `Accept: text/markdown`
 
 - [Remote MCP server](https://walk.omrilotan.com/mcp): read the user's synced walks, goal progress, streaks and records; set the daily goal if allowed. Streamable HTTP with OAuth: the user signs in to Walk and approves. Needs cloud sync turned on in Walk. Cannot run the pad.
 - [MCP server card](https://walk.omrilotan.com/.well-known/mcp/server-card.json): the server's tools and how to connect
-- [WebMCP](https://walk.omrilotan.com/app/): with the app open in Chrome, an in-browser assistant can read walks and run the pad; the user approves each start of the belt. The tools are on `document.modelContext` (also reachable as `navigator.modelContext`): list them with `getTools()`, run one with `executeTool(tool, input)`
+- [WebMCP](https://walk.omrilotan.com/app/): with the app open in Chrome, an in-browser assistant can read walks and run the pad; the user approves each start of the belt. The tools are on `document.modelContext` (also reachable as `navigator.modelContext`): list them with `getTools()`, run one with `executeTool(tool, input)`. An agent that runs scripts in the page should use `window.walkTools` instead, which gives plain data: `walkTools.tools` is the list, `await walkTools.run(name, input)` runs one and returns a string. The objects `getTools()` returns hold the window and cannot be serialized
 
 ## Optional
 
