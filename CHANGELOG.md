@@ -6,6 +6,7 @@ Walk is a web app, so changes are listed by date, not version.
 
 - About lists the keyboard shortcuts: Space to start or pause, ↑ and ↓ for speed, Esc to stop. The buttons say their key when you hover them.
 - Fixed: pressing Esc to close a window (About, the menu, sync) also stopped the belt. Shortcuts now wait until no window is open.
+- Fixed: an assistant in the browser could miss Walk's tools, because it looked for WebMCP under its older name. Walk now answers there too, and the Connect your AI agent window says where the tools are.
 - A small "Tip me" button in About, for anyone who wants to buy a coffee. It's a plain link to Ko-fi; nothing is loaded from Ko-fi.
 
 ## 2026-11-11

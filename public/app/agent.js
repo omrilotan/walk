@@ -2,6 +2,8 @@
 //
 // Registered only where the browser offers a model context (document.modelContext,
 // or navigator.modelContext in older previews). Elsewhere this module does nothing.
+// The tools are also reachable under the old name, navigator.modelContext, for
+// agents that still look there (aliasLegacy).
 //
 // Safety:
 // - Pause and stop always run right away.
@@ -187,14 +189,37 @@ export async function registerAgentTools(walk) {
 		},
 	];
 
+	const registered = [];
 	for (const tool of tools) {
 		try {
 			await context.registerTool(tool);
+			registered.push(tool.name);
 		} catch (error) {
 			console.warn(`Walk: could not register ${tool.name}`, error);
 		}
 	}
+	aliasLegacy(context);
+	// For an agent that reads the console to find its way in.
+	console.info(
+		`Walk: ${registered.length} WebMCP tools on document.modelContext (${registered.join(", ")}). List them with getTools(), run one with executeTool(tool, input).`,
+	);
 	return true;
+}
+
+/**
+ * WebMCP moved from navigator.modelContext to document.modelContext. An agent
+ * that learned the early previews still looks on navigator, finds nothing and
+ * concludes the page has no tools. Where the old name is free, point it at the
+ * same context, so that agent finds the same tools.
+ */
+export function aliasLegacy(context, nav = navigator) {
+	if (!context || nav.modelContext) return false;
+	try {
+		Object.defineProperty(nav, "modelContext", { value: context, configurable: true });
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 // ---------------------------------------------------------------- approval bar
