@@ -48,6 +48,7 @@ const ui = {
 	goal: 5,
 	sessions: [],
 	trash: [], // deleted walks that can still be restored
+	shown: 8, // how many recent walks the list shows
 	spark: [],
 	sparkAt: 0,
 	dashAt: 0,
@@ -544,50 +545,90 @@ function wireDetails() {
 	}
 }
 
+const HISTORY_FIRST = 8;
+const HISTORY_MORE = 20;
+
+/** A button that asks twice: the first tap shows `ask` for a moment, the second runs `onConfirm`. */
+function twoTap(button, idle, ask, onConfirm) {
+	button.addEventListener("click", async () => {
+		if (!button.dataset.confirm) {
+			button.dataset.confirm = "1";
+			button.innerHTML = ask;
+			setTimeout(() => {
+				delete button.dataset.confirm;
+				button.innerHTML = idle;
+			}, 3000);
+			return;
+		}
+		await onConfirm();
+	});
+}
+
+/**
+ * How a walk came to be, when it was not just recorded. `agent` marks the last
+ * change only: a walk typed in by hand and then corrected by an assistant
+ * carries it too, so that case is worded to cover both.
+ */
+function madeBy(session) {
+	if (session.origin === "manual") return session.agent ? "added or changed by an assistant" : "added by hand";
+	if (session.origin === "edited") return session.agent ? "edited by an assistant" : "edited";
+	return "";
+}
+
 function renderHistory(sessions) {
-	const recent = sessions.slice(0, 8);
+	const recent = sessions.slice(0, ui.shown);
 	const list = $("#history");
 	list.innerHTML = "";
 	$("#history-empty").hidden = sessions.length > 0;
+	$("#history-more").hidden = sessions.length <= recent.length;
 	$("#walk-count").textContent = sessions.length ? `${int.format(sessions.length)} total` : "";
 
 	for (const session of recent) {
 		const t = session.totals;
 		const avg = t.seconds ? (t.distance / t.seconds) * 3600 : 0;
+		const by = madeBy(session);
 		const item = document.createElement("li");
 		item.innerHTML = `
 			<span class="walk-icon"><i class="ph ph-sneaker-move"></i></span>
 			<span class="walk-main">
 				<b>${fmt.when.format(session.start)}</b>
-				<span class="muted small">${session.end ? `${int.format(t.steps)} steps, avg ${avg.toFixed(1)} km/h` : "In progress"}</span>
+				<span class="muted small">${session.end ? `${int.format(t.steps)} steps, avg ${avg.toFixed(1)} km/h${by ? `, ${by}` : ""}` : "In progress"}</span>
 			</span>
 			<span class="walk-nums">
 				<span><b>${km(t.distance)}</b><small>km</small></span>
 				<span><b>${minutes(t.seconds)}</b><small>time</small></span>
 				<span><b>${int.format(t.calories)}</b><small>kcal</small></span>
 			</span>`;
-		const remove = document.createElement("button");
-		remove.type = "button";
-		remove.className = "icon-btn subtle";
-		remove.setAttribute("aria-label", "Delete walk");
-		remove.innerHTML = `<i class="ph ph-trash"></i>`;
-		remove.addEventListener("click", async () => {
-			if (!remove.dataset.confirm) {
-				remove.dataset.confirm = "1";
-				remove.innerHTML = `<span class="confirm">Delete?</span>`;
-				setTimeout(() => {
-					delete remove.dataset.confirm;
-					remove.innerHTML = `<i class="ph ph-trash"></i>`;
-				}, 3000);
-				return;
-			}
-			try {
-				await walkOps.remove(session.id);
-			} catch (error) {
-				message(error.message);
-			}
-		});
-		item.append(remove);
+		const actions = document.createElement("span");
+		actions.className = "walk-actions";
+		if (!isLive(session)) {
+			const edit = document.createElement("button");
+			edit.type = "button";
+			edit.className = "icon-btn subtle";
+			edit.setAttribute("aria-label", "Edit walk");
+			edit.innerHTML = `<i class="ph ph-pencil-simple"></i>`;
+			edit.addEventListener("click", () => openWalk(session));
+			actions.append(edit);
+		}
+		// A walk left open by another tab can still be deleted; the one being
+		// recorded here cannot.
+		if (session.id !== tracker.session?.id) {
+			const remove = document.createElement("button");
+			remove.type = "button";
+			remove.className = "icon-btn subtle";
+			remove.setAttribute("aria-label", "Delete walk");
+			remove.innerHTML = `<i class="ph ph-trash"></i>`;
+			twoTap(remove, `<i class="ph ph-trash"></i>`, `<span class="confirm">Delete?</span>`, async () => {
+				try {
+					await walkOps.remove(session.id);
+					message("Walk deleted. You can restore it from Menu, Deleted walks.");
+				} catch (error) {
+					message(error.message);
+				}
+			});
+			actions.append(remove);
+		}
+		item.append(actions);
 		list.append(item);
 	}
 }
@@ -1135,8 +1176,165 @@ async function emptyOldTrash() {
 	for (const session of await getTrash()) if (trashExpired(session)) await deleteSession(session.id);
 }
 
-// Deleted walks: drawn by the page's own window (see the dashboard section).
-function renderTrash(_trash) {}
+// ---------------------------------------------------------------- walk form and deleted walks
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const dayOf = (ms) => {
+	const d = new Date(ms);
+	return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+const timeOf = (ms) => {
+	const d = new Date(ms);
+	return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
+
+/** Minutes with one decimal, or a few more when the seconds need them. */
+function minutesText(seconds) {
+	const tenth = Math.round(seconds / 6) / 10;
+	return String(Math.round(tenth * 60) === seconds ? tenth : Number((seconds / 60).toFixed(3)));
+}
+
+const walkForm = {
+	session: null, // the walk being edited; null when adding
+	initial: {}, // the values the fields were filled with
+};
+
+const walkFields = () => ({
+	date: $("#walk-date"),
+	time: $("#walk-time"),
+	minutes: $("#walk-minutes"),
+	distance: $("#walk-distance"),
+	steps: $("#walk-steps"),
+	calories: $("#walk-calories"),
+});
+
+/** Opens the form to add a walk, or to edit `session`. */
+function openWalk(session = null) {
+	const fields = walkFields();
+	const now = Date.now();
+	const t = session?.totals;
+	walkForm.session = session;
+	walkForm.initial = session
+		? {
+				date: dayOf(session.start),
+				time: timeOf(session.start),
+				minutes: minutesText(t.seconds),
+				distance: String(Number(t.distance.toFixed(3))),
+				steps: String(t.steps),
+				calories: String(t.calories),
+			}
+		: { date: dayOf(now), time: timeOf(now), minutes: "", distance: "", steps: "", calories: "" };
+	for (const [name, field] of Object.entries(fields)) field.value = walkForm.initial[name];
+	fields.date.max = dayOf(now);
+	$("#walk-title").textContent = session ? "Edit walk" : "Add a walk";
+	$("#walk-save").textContent = session ? "Save" : "Add walk";
+	$("#walk-save").disabled = false;
+	$("#walk-hint").hidden = Boolean(session);
+	$("#walk-error").textContent = "";
+	$("#walk-dialog").showModal();
+	fields.date.focus();
+}
+
+async function saveWalk(event) {
+	event.preventDefault();
+	const fields = walkFields();
+	const value = Object.fromEntries(Object.entries(fields).map(([name, field]) => [name, field.value.trim()]));
+	const changed = (name) => value[name] !== walkForm.initial[name];
+	const button = $("#walk-save");
+	const start = new Date(`${value.date}T${value.time}`).getTime();
+	const count = (text) => Math.round(Number(text));
+	$("#walk-error").textContent = "";
+	button.disabled = true;
+	try {
+		const session = walkForm.session;
+		if (session) {
+			const changes = {};
+			if (changed("date") || changed("time")) changes.start = start;
+			if (changed("minutes")) changes.seconds = Math.round(Number(value.minutes) * 60);
+			if (changed("distance")) changes.distance = Number(value.distance);
+			for (const name of ["steps", "calories"]) {
+				if (!changed(name)) continue;
+				if (value[name] === "") throw new Error(`Give the ${name}, or 0.`);
+				changes[name] = count(value[name]);
+			}
+			if (Object.keys(changes).length) await walkOps.edit(session.id, changes);
+			$("#walk-dialog").close();
+			if (Object.keys(changes).length) message("Walk saved.");
+		} else {
+			await walkOps.add({
+				start,
+				seconds: Math.round(Number(value.minutes) * 60),
+				distance: Number(value.distance),
+				steps: value.steps === "" ? undefined : count(value.steps),
+				calories: value.calories === "" ? undefined : count(value.calories),
+			});
+			$("#walk-dialog").close();
+			message("Walk added.");
+		}
+	} catch (error) {
+		$("#walk-error").textContent = error.message;
+	} finally {
+		button.disabled = false;
+	}
+}
+
+function wireWalkForm() {
+	$("#walk-add").addEventListener("click", () => openWalk());
+	$("#walk-form").addEventListener("submit", saveWalk);
+	$("#walk-cancel").addEventListener("click", () => $("#walk-dialog").close());
+	$("#history-more").addEventListener("click", () => {
+		ui.shown += HISTORY_MORE;
+		renderHistory(ui.sessions);
+	});
+}
+
+/** Deleted walks: the menu item's note and the dialog's list. */
+function renderTrash(trash) {
+	const count = trash.length;
+	$("#menu-trash-note").textContent = count ? `${int.format(count)} ${count === 1 ? "walk" : "walks"} you can still restore` : "Restore a walk for 30 days after deleting it";
+	$("#trash-empty").hidden = count > 0;
+	const list = $("#trash-list");
+	list.innerHTML = "";
+	for (const session of [...trash].sort((a, b) => b.deleted - a.deleted)) {
+		const t = session.totals;
+		const left = trashDaysLeft(session);
+		const item = document.createElement("li");
+		item.innerHTML = `
+			<span class="walk-main">
+				<b>${fmt.when.format(session.start)}</b>
+				<span class="muted small">${km(t.distance)} km, ${minutes(t.seconds)}, ${left} ${left === 1 ? "day" : "days"} left</span>
+			</span>`;
+		const run = async (operation) => {
+			$("#trash-error").textContent = "";
+			try {
+				await operation(session.id);
+			} catch (error) {
+				$("#trash-error").textContent = error.message;
+			}
+		};
+		const restore = document.createElement("button");
+		restore.type = "button";
+		restore.className = "btn small";
+		restore.innerHTML = `<i class="ph ph-arrow-counter-clockwise"></i>Restore`;
+		restore.addEventListener("click", () => run(walkOps.restore));
+		const purge = document.createElement("button");
+		purge.type = "button";
+		purge.className = "btn small danger";
+		const idle = `<i class="ph ph-trash"></i>Delete forever`;
+		purge.innerHTML = idle;
+		twoTap(purge, idle, `<span class="confirm">Delete forever?</span>`, () => run(walkOps.purge));
+		const actions = document.createElement("span");
+		actions.className = "walk-actions";
+		actions.append(restore, purge);
+		item.append(actions);
+		list.append(item);
+	}
+}
+
+function openTrash() {
+	$("#trash-error").textContent = "";
+	$("#trash-dialog").showModal();
+}
 
 // ---------------------------------------------------------------- agents (WebMCP)
 
@@ -1347,9 +1545,16 @@ async function init() {
 
 	const menu = $("#menu");
 	$("#menu-btn").addEventListener("click", () => menu.showModal());
-	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog"), $("#day-dialog")]) {
+	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog"), $("#day-dialog"), $("#walk-dialog"), $("#trash-dialog")]) {
+		// Closes on a click on the backdrop: one that began and ended outside
+		// the window's box. A click on its padding, or a selection dragged out
+		// of a field, must not throw away what was typed.
+		let pressed = null;
+		dialog.addEventListener("pointerdown", (event) => (pressed = event.target));
 		dialog.addEventListener("click", (event) => {
-			if (event.target === event.currentTarget) event.currentTarget.close(); // backdrop
+			const box = dialog.getBoundingClientRect();
+			const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+			if (event.target === dialog && pressed === dialog && outside) dialog.close();
 		});
 	}
 	// Every menu action closes the menu; the theme stays open to compare.
@@ -1369,6 +1574,8 @@ async function init() {
 	wireAgent();
 	wireTimer();
 	wireImport();
+	wireWalkForm();
+	$("#menu-trash").addEventListener("click", openTrash);
 	wireDetails();
 	$("#connect").addEventListener("click", actions.connect);
 	$("#start").addEventListener("click", actions.start);

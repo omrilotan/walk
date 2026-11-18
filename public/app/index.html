@@ -342,8 +342,10 @@
 							<p class="card-title">Recent walks</p>
 							<p class="muted small" id="walk-count"></p>
 						</div>
+						<button id="walk-add" class="btn small ghost" type="button"><i class="ph ph-plus"></i>Add walk</button>
 					</div>
 					<ol id="history" class="history"></ol>
+					<button id="history-more" class="btn small ghost more" type="button" hidden>Show more</button>
 					<div id="history-empty" class="empty">
 						<i class="ph ph-person-simple-walk"></i>
 						<p>No walks yet. Connect the pad and press Start. Walks save automatically.</p>
@@ -394,6 +396,9 @@
 				</button>
 				<button id="export-csv" class="menu-item" type="button">
 					<i class="ph ph-table"></i><span><b>Export spreadsheet</b><small>One row per walk (CSV)</small></span>
+				</button>
+				<button id="menu-trash" class="menu-item" type="button">
+					<i class="ph ph-clock-counter-clockwise"></i><span><b>Deleted walks</b><small id="menu-trash-note">Restore a walk for 30 days after deleting it</small></span>
 				</button>
 				<button id="reset" class="menu-item danger" type="button">
 					<i class="ph ph-trash"></i><span><b>Reset my data</b><small>Delete all walks</small></span>
@@ -499,6 +504,36 @@
 			</div>
 			<p id="import-error" class="error small" role="alert"></p>
 		</dialog>
+		<dialog id="walk-dialog" class="about walk-form" aria-labelledby="walk-title">
+			<form method="dialog" class="about-head">
+				<h2 id="walk-title">Add a walk</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<form id="walk-form" class="walk-fields" novalidate>
+				<label>Date<input id="walk-date" name="date" type="date" required /></label>
+				<label>Start time<input id="walk-time" name="time" type="time" required /></label>
+				<label>Minutes walked<input id="walk-minutes" name="minutes" type="number" inputmode="decimal" min="0.1" step="any" required /></label>
+				<label>Distance in km<input id="walk-distance" name="distance" type="number" inputmode="decimal" min="0.01" step="any" required /></label>
+				<label>Steps (optional)<input id="walk-steps" name="steps" type="number" inputmode="numeric" min="0" step="1" /></label>
+				<label>Calories (optional)<input id="walk-calories" name="calories" type="number" inputmode="numeric" min="0" step="1" /></label>
+				<p id="walk-hint" class="muted small walk-hint">Leave steps and calories empty and Walk estimates them from your own walks.</p>
+				<p id="walk-error" class="error small walk-error" role="alert"></p>
+				<div class="walk-actions-bar">
+					<button id="walk-cancel" class="btn" type="button">Cancel</button>
+					<button id="walk-save" class="btn btn-primary" type="submit">Add walk</button>
+				</div>
+			</form>
+		</dialog>
+		<dialog id="trash-dialog" class="about trash" aria-labelledby="trash-title">
+			<form method="dialog" class="about-head">
+				<h2 id="trash-title">Deleted walks</h2>
+				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+			</form>
+			<p class="muted small">A deleted walk waits here for 30 days. Then it is gone for good.</p>
+			<ol id="trash-list" class="history trash-list"></ol>
+			<p id="trash-empty" class="muted trash-empty">No deleted walks. A walk you delete waits here for 30 days.</p>
+			<p id="trash-error" class="error small" role="alert"></p>
+		</dialog>
 		<dialog id="day-dialog" class="about day-detail" aria-labelledby="detail-title">
 			<form method="dialog" class="about-head">
 				<h2 id="detail-title">Day</h2>
@@ -525,7 +560,7 @@
 
 			<section class="way">
 				<h3><i class="ph-bold ph-globe"></i>From anywhere <span class="tag">Recommended</span><span class="tag">Needs cloud sync</span></h3>
-				<p class="muted small">Claude, ChatGPT or any assistant with remote MCP. It reads the walks you've synced, with no browser open. It can't run the pad.</p>
+				<p class="muted small">Claude, ChatGPT or any assistant with remote MCP. It reads the walks you've synced, with no browser open, and can add or correct walks if you allow it. It can't run the pad.</p>
 				<ol class="steps">
 					<li>
 						<span id="agent-step-sync"
