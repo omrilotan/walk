@@ -57,19 +57,43 @@ export async function deleteSession(id) {
 	return completed(tx);
 }
 
-/** Most recent first. */
-export async function getSessions(limit = Infinity) {
+/** Most recent first. Deleted walks (see trashSession) are left out. */
+export const getSessions = (limit = Infinity) => read((session) => !session.deleted, limit);
+
+/** Deleted walks still waiting in Deleted walks, most recent first. */
+export const getTrash = () => read((session) => Boolean(session.deleted));
+
+async function read(wanted, limit = Infinity) {
 	const request = (await store("sessions")).index("start").openCursor(null, "prev");
 	const result = [];
 	return new Promise((resolve, reject) => {
 		request.onsuccess = () => {
 			const cursor = request.result;
 			if (!cursor || result.length >= limit) return resolve(result);
-			result.push(cursor.value);
+			if (wanted(cursor.value)) result.push(cursor.value);
 			cursor.continue();
 		};
 		request.onerror = () => reject(request.error);
 	});
+}
+
+/**
+ * Deletes a walk the recoverable way: it leaves every list and total, and
+ * waits in Deleted walks, with its per-second readings, until restored or
+ * its time is up (walks.js). Not marked for sync: the account learns of a
+ * deletion its own way (sync.js recordDeletion).
+ */
+export const trashSession = (session, at = Date.now()) => putSynced({ ...session, deleted: at, dirty: 0 });
+
+/**
+ * Brings a deleted walk back. It returns under a new uid: the account keeps
+ * the old one as a deletion, and would delete the walk again on the next sync.
+ */
+export async function restoreSession(session, at = Date.now()) {
+	const { deleted: _, ...walk } = session;
+	const restored = { ...walk, uid: crypto.randomUUID(), updated: Math.max(at, (walk.updated ?? 0) + 1) };
+	await putSession(restored);
+	return restored;
 }
 
 export async function getSetting(key, fallback) {

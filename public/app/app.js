@@ -1,4 +1,17 @@
-import { deleteSession, exportAll, getSessions, getSetting, importAll, planImport, setSetting } from "./db.js";
+import {
+	addSession,
+	deleteSession,
+	exportAll,
+	getSessions,
+	getSetting,
+	getTrash,
+	importAll,
+	planImport,
+	putSession,
+	restoreSession,
+	setSetting,
+	trashSession,
+} from "./db.js";
 import { Pad } from "./pad.js";
 import { areaChart, barChart, detailData, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
@@ -6,6 +19,7 @@ import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
 import { DEFAULT_TIMER, KINDS, amount, chime, crossed, describe, done, goal, normalize, primeChime, progress } from "./timer.js";
 import { registerAgentTools } from "./agent.js";
+import { changedWalk, manualWalk, numbersOf, problemWith, rates, trashDaysLeft, trashExpired } from "./walks.js";
 import { checkAccount, currentAccount as account, recordDeletion, resetAll, signedIn, sync } from "./sync.js";
 import { api, enterCode, requestCode, signOut } from "./auth.js";
 
@@ -33,6 +47,7 @@ const ui = {
 	presets: DEFAULT_PRESETS,
 	goal: 5,
 	sessions: [],
+	trash: [], // deleted walks that can still be restored
 	spark: [],
 	sparkAt: 0,
 	dashAt: 0,
@@ -407,8 +422,10 @@ function wireTimer() {
 
 async function loadSessions() {
 	ui.sessions = await getSessions();
+	ui.trash = await getTrash();
 	renderDashboard(ui.sessions);
 	renderHistory(ui.sessions);
+	renderTrash(ui.trash);
 }
 
 function renderDashboard(sessions) {
@@ -564,10 +581,11 @@ function renderHistory(sessions) {
 				}, 3000);
 				return;
 			}
-			await recordDeletion(session);
-			await deleteSession(session.id);
-			loadSessions();
-			syncNow();
+			try {
+				await walkOps.remove(session.id);
+			} catch (error) {
+				message(error.message);
+			}
 		});
 		item.append(remove);
 		list.append(item);
@@ -1041,6 +1059,85 @@ function onKey(event) {
 	handler();
 }
 
+// ---------------------------------------------------------------- walks by hand
+
+// Adding, correcting, deleting and restoring a walk. The page's own buttons
+// and the agent tools both go through here, so both follow the same rules
+// (walks.js). Each throws an Error whose message says, for the user, what is
+// wrong. A walk is named by its uid, or by its key in this browser (id).
+
+const findWalk = (key, list = ui.sessions) => list.find((s) => s.uid === key || s.id === key) ?? null;
+
+/** The walk being recorded is the tracker's: it can't be changed or deleted. */
+const isLive = (session) => !session.end || session.id === tracker.session?.id;
+
+async function walksChanged() {
+	await loadSessions();
+	syncNow();
+}
+
+const walkOps = {
+	/** input: { start (ms), seconds, distance (km), steps?, calories?, maxSpeed? }. */
+	async add(input, { agent = false } = {}) {
+		const problem = problemWith(input);
+		if (problem) throw new Error(problem);
+		if (ui.sessions.some((s) => s.start === input.start)) throw new Error("There is already a walk that started at that time.");
+		const walk = manualWalk(input, { per: rates(ui.sessions), agent });
+		await addSession(walk);
+		await walksChanged();
+		return findWalk(walk.uid);
+	},
+
+	/** changes: any of start, seconds, distance, steps, calories, maxSpeed. */
+	async edit(key, changes, { agent = false } = {}) {
+		const session = findWalk(key);
+		if (!session) throw new Error("That walk is not here.");
+		if (isLive(session)) throw new Error("This walk is still being recorded. Stop it first.");
+		const walk = changedWalk(session, changes, { agent });
+		const problem = problemWith(numbersOf(walk));
+		if (problem) throw new Error(problem);
+		await putSession(walk);
+		await walksChanged();
+		return findWalk(walk.uid);
+	},
+
+	/** To Deleted walks, where it can be restored for a while (walks.js TRASH_DAYS). */
+	async remove(key) {
+		const session = findWalk(key);
+		if (!session) throw new Error("That walk is not here.");
+		if (session.id === tracker.session?.id) throw new Error("This walk is still being recorded. Stop it first.");
+		await recordDeletion(session);
+		await trashSession(session);
+		await walksChanged();
+		return session;
+	},
+
+	async restore(key) {
+		const session = findWalk(key, ui.trash);
+		if (!session) throw new Error("That walk is not in Deleted walks.");
+		if (ui.sessions.some((s) => s.start === session.start)) throw new Error("This walk is already back in your walks.");
+		const walk = await restoreSession(session);
+		await walksChanged();
+		return findWalk(walk.uid);
+	},
+
+	/** Gone for good, with its per-second readings. */
+	async purge(key) {
+		const session = findWalk(key, ui.trash);
+		if (!session) throw new Error("That walk is not in Deleted walks.");
+		await deleteSession(session.id);
+		await loadSessions();
+	},
+};
+
+/** Deleted walks whose time is up go for good. */
+async function emptyOldTrash() {
+	for (const session of await getTrash()) if (trashExpired(session)) await deleteSession(session.id);
+}
+
+// Deleted walks: drawn by the page's own window (see the dashboard section).
+function renderTrash(_trash) {}
+
 // ---------------------------------------------------------------- agents (WebMCP)
 
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -1052,11 +1149,16 @@ const walkTotals = (t) => ({
 });
 const walkInfo = (s) =>
 	s && {
+		id: s.uid,
 		start: new Date(s.start).toISOString(),
 		end: s.end ? new Date(s.end).toISOString() : null,
 		...walkTotals(s.totals),
 		topSpeed: s.maxSpeed,
+		// Added or corrected by hand; an assistant's change says so.
+		...(s.origin && { origin: s.origin }),
+		...(s.agent && { byAssistant: true }),
 	};
+const whenText = (s) => `${fmt.when.format(s.start)}, ${km(s.totals.distance)} km`;
 const dayInfo = (d) => ({ ...walkTotals(d), walks: d.walks });
 function timerInfo() {
 	const timer = ui.timer;
@@ -1109,6 +1211,33 @@ const agentSurface = {
 		};
 	},
 	recentWalks: (limit) => ui.sessions.slice(0, limit).map(walkInfo),
+	// Walks by hand. Each says on the page what the assistant did.
+	findWalk: (id) => walkInfo(findWalk(id)),
+	describeWalk: (id) => {
+		const session = findWalk(id) ?? findWalk(id, ui.trash);
+		return session ? whenText(session) : null;
+	},
+	addWalk: async (input) => {
+		const walk = await walkOps.add(input, { agent: true });
+		toast(`An assistant added a walk: ${whenText(walk)}.`);
+		return walkInfo(walk);
+	},
+	editWalk: async (id, changes) => {
+		const walk = await walkOps.edit(id, changes, { agent: true });
+		toast(`An assistant changed a walk: ${whenText(walk)}.`);
+		return walkInfo(walk);
+	},
+	deleteWalk: async (id) => {
+		const walk = await walkOps.remove(id);
+		toast(`An assistant deleted a walk: ${whenText(walk)}. It is in Deleted walks.`);
+		return walkInfo(walk);
+	},
+	restoreWalk: async (id) => {
+		const walk = await walkOps.restore(id);
+		toast(`An assistant restored a walk: ${whenText(walk)}.`);
+		return walkInfo(walk);
+	},
+	deletedWalks: () => ui.trash.map((s) => ({ ...walkInfo(s), deleted: new Date(s.deleted).toISOString(), daysLeft: trashDaysLeft(s) })),
 	start: (kmh) => {
 		setTarget(kmh);
 		pad.start(ui.target);
@@ -1202,6 +1331,7 @@ async function init() {
 	renderTimer();
 	setTarget(await getSetting("target", 3));
 	await tracker.finishStale();
+	await emptyOldTrash();
 	await loadSessions();
 
 	pad.addEventListener("connection", (e) => renderConnection(e.detail.connected));

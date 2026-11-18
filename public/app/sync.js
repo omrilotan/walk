@@ -2,7 +2,7 @@
 // server holds walk totals so other browsers and assistants can read them.
 // Per-second readings never leave the browser.
 
-import { deleteAllWalks, deleteSession, getSessions, getSetting, putSynced, setSetting } from "./db.js";
+import { deleteAllWalks, getSessions, getSetting, getTrash, putSynced, setSetting, trashSession } from "./db.js";
 
 const BATCH = 200;
 
@@ -43,7 +43,10 @@ export const signedIn = () => Boolean(account);
 /** The signed-in account ({ email, mcp }), or null. */
 export const currentAccount = () => account;
 
-/** Deleting a walk here deletes it on the server and in the user's other browsers too. */
+/**
+ * Deleting a walk here deletes it in the account and in the user's other
+ * browsers too. Each browser that had it keeps it in Deleted walks for a while.
+ */
 export async function recordDeletion(session) {
 	if (!session.uid) return;
 	const deleted = await getSetting("sync:deleted", []);
@@ -74,6 +77,9 @@ const toServer = (s) => ({
 	updated: s.updated ?? s.start,
 	maxSpeed: s.maxSpeed ?? 0,
 	totals: s.totals,
+	// Added or corrected by hand, and whether an assistant did it (walks.js).
+	origin: s.origin ?? null,
+	agent: Boolean(s.agent),
 });
 
 /**
@@ -132,6 +138,7 @@ async function run() {
 
 		// Pushed: clear the mark, unless the walk changed again meanwhile.
 		const now = new Map((await getSessions()).map((s) => [s.uid, s]));
+		const trashed = new Set((await getTrash()).map((s) => s.uid));
 		for (const pushed of walks) {
 			const current = now.get(pushed.uid);
 			if (current && current.updated === pushed.updated) await putSynced({ ...current, dirty: 0 });
@@ -144,17 +151,19 @@ async function run() {
 		// Pulled: newer copies replace ours. Walks still in progress elsewhere
 		// wait until they end, so the tracker never resumes another browser's walk.
 		for (const remote of data.walks) {
-			if (remote.end === null) continue;
+			if (remote.end === null || trashed.has(remote.uid)) continue;
 			const mine = now.get(remote.uid);
 			if (mine && (mine.updated ?? 0) >= remote.updated) continue;
 			const { id, samples, ...rest } = mine ?? {};
 			await putSynced({ ...(mine ? { id } : {}), ...rest, ...remote, dirty: 0 });
 			changed++;
 		}
+		// Deleted elsewhere (another browser, or an assistant): the copy here
+		// goes to Deleted walks, where it can still be restored.
 		for (const uid of data.deleted) {
 			const mine = now.get(uid);
 			if (mine) {
-				await deleteSession(mine.id);
+				await trashSession(mine);
 				changed++;
 			}
 		}

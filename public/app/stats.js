@@ -100,7 +100,9 @@ export function summarize(sessions, now = Date.now()) {
 	}
 
 	const lifetime = sessions.reduce(add, empty());
-	const finished = sessions.filter((s) => s.totals.seconds >= 60);
+	// Records are for walks as the pad recorded them: a number typed by hand
+	// (walks.js) counts in every total, and never becomes a personal best.
+	const finished = sessions.filter((s) => s.totals.seconds >= 60 && !s.origin);
 	const best = (fn) => finished.reduce((top, s) => (!top || fn(s) > fn(top) ? s : top), null);
 
 	return {

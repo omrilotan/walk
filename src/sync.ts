@@ -28,6 +28,11 @@ const Walk = z.object({
 		steps: z.number().min(0).max(10_000_000),
 		calories: z.number().min(0).max(1_000_000),
 	}),
+	// Added or corrected by hand, and whether an assistant did it
+	// (public/app/walks.js). A browser from before these existed sends
+	// neither, and the walk keeps what it had.
+	origin: z.enum(["manual", "edited"]).nullable().optional(),
+	agent: z.boolean().optional(),
 });
 
 const SyncRequest = z.object({
@@ -58,6 +63,8 @@ interface WalkRow {
 	steps: number;
 	calories: number;
 	max_speed: number;
+	origin: string | null;
+	agent: number;
 }
 
 export const toWalk = (row: WalkRow) => ({
@@ -67,6 +74,8 @@ export const toWalk = (row: WalkRow) => ({
 	updated: row.updated,
 	maxSpeed: row.max_speed,
 	totals: { distance: row.distance, seconds: row.seconds, steps: row.steps, calories: row.calories },
+	origin: row.origin,
+	agent: Boolean(row.agent),
 });
 
 function validZone(zone: string): boolean {
@@ -90,13 +99,15 @@ export async function sync(request: Request, env: Env, user: User): Promise<Resp
 	for (const walk of walks) {
 		writes.push(
 			env.DB.prepare(
-				`INSERT INTO walks (user_id, uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed)
-				 VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?9, ?10, ?11)
+				`INSERT INTO walks (user_id, uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed, origin, agent)
+				 VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
 				 ON CONFLICT (user_id, uid) DO UPDATE SET
 				   start = excluded.start, "end" = excluded."end", updated = excluded.updated,
 				   changed_at = excluded.changed_at, deleted = 0, distance = excluded.distance,
 				   seconds = excluded.seconds, steps = excluded.steps, calories = excluded.calories,
-				   max_speed = excluded.max_speed
+				   max_speed = excluded.max_speed,
+				   origin = CASE WHEN ?14 THEN excluded.origin ELSE walks.origin END,
+				   agent = CASE WHEN ?14 THEN excluded.agent ELSE walks.agent END
 				 WHERE excluded.updated > walks.updated AND walks.deleted = 0`,
 			).bind(
 				user.id,
@@ -110,6 +121,9 @@ export async function sync(request: Request, env: Env, user: User): Promise<Resp
 				Math.round(walk.totals.steps),
 				Math.round(walk.totals.calories),
 				walk.maxSpeed,
+				walk.origin ?? null,
+				walk.agent ? 1 : 0,
+				walk.origin !== undefined || walk.agent !== undefined ? 1 : 0,
 			),
 		);
 	}
@@ -141,7 +155,7 @@ export async function sync(request: Request, env: Env, user: User): Promise<Resp
 	// At or after the cursor: rows written in the cursor's own millisecond are
 	// sent again rather than missed. Applying a row twice changes nothing.
 	const { results } = await env.DB.prepare(
-		`SELECT uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed
+		`SELECT uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed, origin, agent
 		   FROM walks WHERE user_id = ? AND changed_at >= ? ORDER BY changed_at LIMIT ?`,
 	)
 		.bind(user.id, cursor, PAGE + 1)
@@ -195,7 +209,7 @@ export async function exportData(env: Env, user: User): Promise<Response> {
 		.bind(user.id)
 		.first<Record<string, unknown>>();
 	const { results } = await env.DB.prepare(
-		`SELECT uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed
+		`SELECT uid, start, "end", updated, changed_at, deleted, distance, seconds, steps, calories, max_speed, origin, agent
 		   FROM walks WHERE user_id = ? AND deleted = 0 ORDER BY start`,
 	)
 		.bind(user.id)
