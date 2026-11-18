@@ -14,6 +14,10 @@
 //   agent dialog.
 // - One speed change moves the target by at most MAX_STEP km/h.
 // - Connecting needs a user gesture, so agents cannot connect the pad.
+// - Adding, correcting and restoring a walk run right away, and the page says
+//   what the agent did. Deleting a walk asks the user first, every time: there
+//   is no "always allow" for it. A deleted walk waits in Deleted walks, where
+//   the user can restore it (walks.js TRASH_DAYS).
 
 const MAX_STEP = 1;
 const APPROVAL_TIMEOUT_MS = 60000;
@@ -29,7 +33,10 @@ export function modelContext() {
 /**
  * @param {object} walk - The app's control surface:
  *   status(), summary(), recentWalks(limit), start(kmh), setSpeed(kmh), setTarget(kmh),
- *   pause(), stop(), setGoal(km), setTimer(timer), getStartMode(), setStartMode(mode).
+ *   pause(), stop(), setGoal(km), setTimer(timer), getStartMode(), setStartMode(mode),
+ *   describeWalk(id), addWalk(input), editWalk(id, changes), deleteWalk(id),
+ *   restoreWalk(id), deletedWalks(). The walk ones throw an Error whose message
+ *   says what is wrong.
  */
 export async function registerAgentTools(walk) {
 	const context = modelContext();
@@ -61,13 +68,99 @@ export async function registerAgentTools(walk) {
 		},
 		{
 			name: "get_recent_walks",
-			description: "The most recent walks, newest first, with start and end time, distance, duration, steps, calories and top speed.",
+			description:
+				"The most recent walks, newest first, with start and end time, distance, duration, steps, calories and top speed. Each has an id, which edit_walk and delete_walk take. origin says a walk was added by hand (manual) or corrected (edited); byAssistant says an assistant did it.",
 			inputSchema: {
 				type: "object",
 				properties: { limit: { type: "integer", minimum: 1, maximum: 50, description: "How many walks. Default 10." } },
 			},
 			annotations: { readOnlyHint: true },
 			execute: async ({ limit = 10 } = {}) => json(walk.recentWalks(limit)),
+		},
+		{
+			name: "add_walk",
+			description:
+				"Adds a walk the pad did not record, for example one Walk missed. Ask the user for the numbers; never guess them. Steps and calories left out are estimated from the user's own walks. The walk is marked as added by an assistant, counts in every total, and does not count toward personal records.",
+			inputSchema: {
+				type: "object",
+				properties: {
+					start: { type: "string", description: "When the walk started, in the user's local time: YYYY-MM-DDTHH:MM." },
+					minutes: { type: "number", description: "Minutes walked." },
+					distanceKm: { type: "number", description: "Distance in km." },
+					steps: { type: "integer", description: "Steps. Optional." },
+					calories: { type: "integer", description: "Calories. Optional." },
+				},
+				required: ["start", "minutes", "distanceKm"],
+			},
+			annotations: { consequentialHint: true },
+			execute: async (input = {}) => {
+				const start = startOf(input.start);
+				if (start === null) return "Give start as YYYY-MM-DDTHH:MM, in the user's local time.";
+				return attempt(async () => json(await walk.addWalk({ start, ...numbers(input) })));
+			},
+		},
+		{
+			name: "edit_walk",
+			description:
+				"Corrects a walk in history: its start, minutes walked, distance, steps or calories. Give the walk's id (from get_recent_walks) and only what changes. Ask the user before changing anything. The walk is marked as edited by an assistant and no longer counts toward personal records. The walk being recorded can't be changed.",
+			inputSchema: {
+				type: "object",
+				properties: {
+					id: { type: "string", description: "The walk's id." },
+					start: { type: "string", description: "New start, in the user's local time: YYYY-MM-DDTHH:MM." },
+					minutes: { type: "number", description: "Minutes walked." },
+					distanceKm: { type: "number", description: "Distance in km." },
+					steps: { type: "integer", description: "Steps." },
+					calories: { type: "integer", description: "Calories." },
+				},
+				required: ["id"],
+			},
+			annotations: { consequentialHint: true },
+			execute: async ({ id, ...input } = {}) => {
+				const changes = numbers(input);
+				if (input.start !== undefined) {
+					changes.start = startOf(input.start);
+					if (changes.start === null) return "Give start as YYYY-MM-DDTHH:MM, in the user's local time.";
+				}
+				if (!Object.keys(changes).length) return "Say what to change: start, minutes, distanceKm, steps or calories.";
+				return attempt(async () => json(await walk.editWalk(id, changes)));
+			},
+		},
+		{
+			name: "delete_walk",
+			description:
+				"Deletes a walk from history. Walk asks the user on screen every time, and this call waits up to a minute for their answer. The walk goes to Deleted walks, where it can be restored for 30 days (restore_walk, or Menu, Deleted walks). The walk being recorded can't be deleted.",
+			inputSchema: {
+				type: "object",
+				properties: { id: { type: "string", description: "The walk's id, from get_recent_walks." } },
+				required: ["id"],
+			},
+			annotations: { consequentialHint: true, destructiveHint: true },
+			execute: async ({ id } = {}, { signal } = {}) => {
+				const what = walk.describeWalk(id);
+				if (!what) return "There is no walk with that id. Use get_recent_walks to see ids.";
+				const answer = await approve(`An agent wants to delete your walk of ${what}.`, signal, { always: false });
+				if (!answer) return "The user did not allow the deletion. Do not retry unless they ask.";
+				return attempt(async () => `Deleted: ${json(await walk.deleteWalk(id))}. It can be restored for 30 days.`);
+			},
+		},
+		{
+			name: "get_deleted_walks",
+			description: "Walks deleted in this browser that can still be restored, with their ids and the days each has left.",
+			inputSchema: { type: "object", properties: {} },
+			annotations: { readOnlyHint: true },
+			execute: async () => json(walk.deletedWalks()),
+		},
+		{
+			name: "restore_walk",
+			description: "Brings a deleted walk back into history. Give its id from get_deleted_walks. The restored walk has a new id.",
+			inputSchema: {
+				type: "object",
+				properties: { id: { type: "string", description: "The deleted walk's id." } },
+				required: ["id"],
+			},
+			annotations: { consequentialHint: true },
+			execute: async ({ id } = {}) => attempt(async () => json(await walk.restoreWalk(id))),
 		},
 		{
 			name: "start_walk",
@@ -211,6 +304,32 @@ export async function registerAgentTools(walk) {
 	return true;
 }
 
+/** When a walk started, from "YYYY-MM-DDTHH:MM" in the user's own time, in ms; null if it isn't one. */
+export function startOf(text) {
+	if (typeof text !== "string" || !/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(text.trim())) return null;
+	const t = new Date(text.trim().replace(" ", "T")).getTime();
+	return Number.isFinite(t) ? t : null;
+}
+
+/** A tool's numbers, in the names the app uses. What the agent left out stays out. */
+export function numbers({ minutes, distanceKm, steps, calories } = {}) {
+	return {
+		...(minutes !== undefined && { seconds: Math.round(minutes * 60) }),
+		...(distanceKm !== undefined && { distance: distanceKm }),
+		...(steps !== undefined && { steps }),
+		...(calories !== undefined && { calories }),
+	};
+}
+
+/** Runs a change to the walks; what the app refuses comes back as its own sentence. */
+async function attempt(change) {
+	try {
+		return await change();
+	} catch (error) {
+		return error.message;
+	}
+}
+
 /**
  * The same tools as plain data, for an agent that works by running scripts in
  * the page. The objects getTools() returns each hold the page's window, so
@@ -255,11 +374,15 @@ export function aliasLegacy(context, nav = navigator) {
 
 let cancelPending = null;
 
-/** Shows the Allow / Always allow / Deny bar. Resolves "once", "always", or false. */
-function approve(text, signal) {
+/**
+ * Shows the Allow / Always allow / Deny bar. Resolves "once", "always", or false.
+ * `always: false` leaves out Always allow: for what must be asked every time.
+ */
+function approve(text, signal, { always = true } = {}) {
 	cancelPending?.(); // a newer request replaces an older one
 	const bar = $("#agent-ask");
 	$("#agent-ask-text").textContent = text;
+	$("#agent-always").hidden = !always;
 	bar.hidden = false;
 	$("#agent-allow").focus();
 

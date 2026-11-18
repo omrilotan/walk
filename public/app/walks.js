@@ -50,19 +50,25 @@ export function problemWith({ start, seconds, distance, steps = 0, calories = 0,
 
 /**
  * Steps and calories per km, from the walks the pad recorded: what to fill in
- * when a walk added by hand leaves them out. Null without such walks.
+ * when a walk added by hand leaves them out. Null with nothing to learn from.
  */
 export function rates(sessions) {
-	let distance = 0;
-	let steps = 0;
-	let calories = 0;
-	for (const { origin, totals } of sessions) {
-		if (origin || !(totals?.distance > 0)) continue;
-		distance += totals.distance;
-		steps += totals.steps ?? 0;
-		calories += totals.calories ?? 0;
+	// Recorded walks first. Without any, recorded walks that were corrected:
+	// their steps are still the pad's. Never walks typed in by hand, whose
+	// numbers may be estimates themselves.
+	for (const wanted of [undefined, "edited"]) {
+		let distance = 0;
+		let steps = 0;
+		let calories = 0;
+		for (const { origin, totals } of sessions) {
+			if ((origin ?? undefined) !== wanted || !(totals?.distance > 0)) continue;
+			distance += totals.distance;
+			steps += totals.steps ?? 0;
+			calories += totals.calories ?? 0;
+		}
+		if (distance) return { stepsPerKm: steps / distance, caloriesPerKm: calories / distance };
 	}
-	return distance ? { stepsPerKm: steps / distance, caloriesPerKm: calories / distance } : null;
+	return null;
 }
 
 const estimate = (given, perKm, distance) => (given === undefined || given === null ? Math.round((perKm ?? 0) * distance) : Math.round(given));
