@@ -2,6 +2,15 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-18
+
+- Add a walk by hand, for one Walk missed: the day, the start, minutes and km. Steps and calories left empty are estimated from your own walks. The button is under Recent walks.
+- Edit a walk: the pencil next to it corrects its start, time, distance, steps or calories. Show more, under the list, reaches older walks.
+- A deleted walk now waits 30 days in Menu, Deleted walks, where you can restore it or delete it for good. This holds in every browser that had the walk.
+- A walk added or changed by hand says so in the list. It counts in every total. Personal records count only walks as the pad recorded them.
+- AI assistants can fix your history too, if you allow it: add a walk, correct one, delete one. Through remote MCP this is a new permission, shown on the approval screen; an assistant you connected earlier needs to be disconnected and connected again to get it. In the browser (WebMCP), Walk asks on screen before every deletion and says what the assistant did. Their changes are marked as an assistant's.
+- A click on a window's edge no longer closes it; only a click outside it does.
+
 ## 2026-11-17
 
 - About lists the keyboard shortcuts: Space to start or pause, ↑ and ↓ for speed, Esc to stop. The buttons say their key when you hover them.

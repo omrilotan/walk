@@ -58,6 +58,18 @@
 
 <kbd>Space</kbd> start or pause &nbsp;·&nbsp; <kbd>↑</kbd> <kbd>↓</kbd> speed &nbsp;·&nbsp; <kbd>Esc</kbd> stop
 
+## Fix your history
+
+Walk records what the pad reports, and a connection can drop mid-walk. So you can put it right yourself, under **Recent walks**:
+
+| | |
+| --- | --- |
+| **Add walk** | A walk Walk missed: the day, the start, minutes and km. Steps and calories left empty are estimated from your own walks. |
+| **Edit** (the pencil) | Correct a walk's start, time, distance, steps or calories. |
+| **Delete** (the bin) | The walk goes to **Menu, Deleted walks**, where you can restore it for 30 days, or delete it for good. |
+
+A walk added or changed by hand says so in the list. It counts in every total; personal records count only walks as the pad recorded them.
+
 ## Your data
 
 |                       | 🔒 On your device (default)                | ☁️ With cloud sync (optional)                       |
@@ -111,8 +123,13 @@ No analytics, no tracking, no ads, no request logs, and no third-party requests:
 | `get_daily_totals` | Day by day, with whether you met your goal | No |
 | `get_walks` | Individual walks, optionally between two dates | No |
 | `set_goal` | Sets your daily goal | Yes, only if you allowed it |
+| `add_walk` | Adds a walk the pad did not record | Yes, only if you allowed it |
+| `edit_walk` | Corrects a walk's start, time, distance, steps or calories | Yes, only if you allowed it |
+| `delete_walk` | Deletes a walk. You can restore it in Walk for 30 days | Yes, only if you allowed it |
 
-The read-only tools can be set to "Always allow" in your assistant. A walk appears once it syncs, usually when it ends. See and disconnect assistants under **Sync and assistants**.
+The read-only tools can be set to "Always allow" in your assistant. A walk appears once it syncs, usually when it ends. A change an assistant makes reaches your browsers on their next sync, marked as an assistant's. See and disconnect assistants under **Sync and assistants**.
+
+An assistant connected before 18 November 2026 can't change walks: disconnect it and connect it again to allow that.
 
 ### Optional: without an account (WebMCP)
 
@@ -126,6 +143,8 @@ The read-only tools can be set to "Always allow" in your assistant. A walk appea
 | Change speed | At most 1 km/h per step |
 | Start or resume the belt | Walk asks first: **Allow**, **Always allow** or **Deny** |
 | Change your daily goal | When you ask |
+| Add a walk, correct one, or restore a deleted one | When you ask. Walk says on the page what it did |
+| Delete a walk | Walk asks first, every time: **Allow** or **Deny** |
 
 You always press Connect yourself; an assistant can't pair the pad.
 
