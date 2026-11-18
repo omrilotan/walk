@@ -74,7 +74,7 @@ export function serverCard(env: Env): Response {
 		protocolVersion: MCP_PROTOCOL,
 		serverInfo: { ...SERVER },
 		description:
-			"Read your walking pad walks from Walk, synced from your browser: daily totals, goal progress, streaks, records and individual walks. Optionally set your daily goal.",
+			"Read your walking pad walks from Walk, synced from your browser: daily totals, goal progress, streaks, records and individual walks. If you allow it, also set your daily goal, and add, correct or delete walks.",
 		instructions: INSTRUCTIONS,
 		iconUrl: `${env.SELF_URL}/icon.svg`,
 		websiteUrl: env.SELF_URL,
