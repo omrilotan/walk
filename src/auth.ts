@@ -15,7 +15,7 @@ import { hashToken, newToken, now, ok, problem } from "./util.ts";
 
 export const COOKIE = "__Host-walk";
 /** The terms and privacy notice in force (public/privacy/, public/terms/). Bump when they change. */
-export const POLICY_VERSION = "2026-11-04";
+export const POLICY_VERSION = "2026-11-18";
 const SESSION_DAYS = 180;
 const CODE_MINUTES = 15;
 /** Wrong tries a browser gets per code. */

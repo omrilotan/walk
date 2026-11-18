@@ -20,8 +20,8 @@ export interface Env {
 	DEV_AUTH?: string;
 }
 
-/** What an assistant may do. Reading is always granted; changing the goal is asked separately. */
-export const SCOPES = ["read", "goal"] as const;
+/** What an assistant may do. Reading is always granted; changing the goal, and adding, correcting and deleting walks, are asked separately. */
+export const SCOPES = ["read", "goal", "edit"] as const;
 export type Scope = (typeof SCOPES)[number];
 
 /** What a grant carries into every MCP request. Encrypted at rest by the provider. */

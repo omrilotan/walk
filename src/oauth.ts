@@ -28,7 +28,7 @@ async function load(env: Env, id: string | null): Promise<Pending | null> {
 	return env.OAUTH_KV.get<Pending>(key(id), "json");
 }
 
-/** Reading is the point of connecting; the goal is asked for separately. */
+/** Reading is the point of connecting; the goal and editing walks are asked for separately. */
 function grantedScopes(requested: string[]): Scope[] {
 	const known = requested.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s));
 	return [...new Set<Scope>(["read", ...(known.length ? known : SCOPES)])];
@@ -59,6 +59,7 @@ export async function authorize(request: Request, env: Env): Promise<Response> {
 const SCOPE_TEXT: Record<Scope, string> = {
 	read: "Read your walks and stats: distance, time, steps, calories, streaks and records.",
 	goal: "Change your daily distance goal.",
+	edit: "Add walks, correct them and delete them. A deleted walk can be restored in Walk for 30 days.",
 };
 
 /** GET and POST /oauth/consent */
@@ -98,7 +99,7 @@ export async function consent(request: Request, env: Env): Promise<Response> {
 			<p>Signed in as <b>${escapeHtml(user.email)}</b>.</p>
 			<p>${escapeHtml(pending.clientName)} will be able to:</p>
 			<ul class="plain-list">${scopes.map((s) => `<li>${escapeHtml(SCOPE_TEXT[s])}</li>`).join("")}</ul>
-			<p class="muted small">It can't start or stop your walking pad, and it can't delete anything. It sees walks Walk has synced from your browser. You can disconnect it any time in Walk, under Menu, Sync and assistants.</p>
+			<p class="muted small">${scopes.includes("edit") ? "It can't start or stop your walking pad." : "It can't start or stop your walking pad, and it can't delete anything."} It sees walks Walk has synced from your browser. You can disconnect it any time in Walk, under Menu, Sync and assistants.</p>
 			<p class="muted small">After you answer, you go back to <b>${escapeHtml(pending.redirectHost)}</b>.</p>
 			<form method="post" action="/oauth/consent" class="plain-actions">
 				<input type="hidden" name="req" value="${escapeHtml(id!)}" />
