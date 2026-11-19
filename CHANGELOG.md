@@ -2,6 +2,15 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-19
+
+- Import, in the menu, can now be reached and opened with the keyboard.
+- A backup file with text where a walk's numbers should be is now skipped as not a walk, instead of being imported.
+- Sign in, Connect your AI agent and the other windows close only on a click outside them, like the rest.
+- Text on green buttons and the toast, and the small grey labels and units, are darker for easier reading.
+- A screen reader no longer reads out the speed on every reading. The Close and theme buttons now have names it can read.
+- The home page serves its larger pictures as WebP where the browser supports it.
+
 ## 2026-11-18
 
 - Add a walk by hand, for one Walk missed: the day, the start, minutes and km. Steps and calories left empty are estimated from your own walks. The button is under Recent walks.

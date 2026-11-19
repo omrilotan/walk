@@ -50,3 +50,29 @@ test("planImport drops local-only fields and keeps the samples", () => {
 	assert.equal(plan.add[0].session.dirty, undefined);
 	assert.deepEqual(plan.add[0].samples, [{ t: 1 }]);
 });
+
+test("planImport rejects walks whose numbers are not numbers, as they end up in markup", () => {
+	const bad = (patch: object) => ({ ...walk("a", 100, 1), ...patch });
+	const plan = planImport(
+		{
+			sessions: [
+				bad({ start: Infinity }),
+				bad({ totals: { ...totals, distance: '"><img src=x onerror=alert(1)>' } }),
+				bad({ totals: { ...totals, steps: "1" } }),
+				bad({ totals: { seconds: 1, steps: 1, calories: 1 } }),
+				bad({ end: "x" }),
+				bad({ uid: 5 }),
+				walk("b", 200, 1),
+			],
+		},
+		[],
+	);
+	assert.equal(plan.invalid, 6);
+	assert.deepEqual(uids(plan.add), ["b"]);
+});
+
+test("planImport takes a walk without steps or calories, as an old backup may hold", () => {
+	const plan = planImport({ sessions: [{ uid: "a", start: 100, updated: 1, totals: { distance: 1, seconds: 600 } }] }, []);
+	assert.equal(plan.invalid, 0);
+	assert.deepEqual(uids(plan.add), ["a"]);
+});

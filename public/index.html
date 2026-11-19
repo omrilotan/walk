@@ -476,7 +476,7 @@
 				height: 32px;
 				font-weight: 700;
 				color: var(--on-accent);
-				background: var(--accent);
+				background: var(--accent-fill);
 			}
 
 			.steps li span {
@@ -624,7 +624,7 @@
 				<span class="brand-name"><svg class="wordmark" viewBox="76 90 674 239" role="img" aria-label="Walk"><path d="M76 162H119L136 256 156 162H193L214 256 231 162H274L240 329H194L174 243 156 329H110Z"/><g class="wordmark-walker"><path transform="translate(265 329)" d="M61-167H102L150-34H190V0H116L81-112 57-34H87V0H0Z"/><circle cx="379" cy="117" r="27"/></g><path transform="translate(10 0)" d="M471 162H514V294H582V329H471ZM598 162H642V229L687 162H740L686 236 740 329H688L657 272 642 287V329H598Z"/></svg><small>Works with Superun, DeerRun &amp; PitPat pads</small></span>
 			</a>
 			<span class="spacer"></span>
-			<button id="theme" class="icon-btn" type="button" title="Theme: auto">
+			<button id="theme" class="icon-btn" type="button" title="Theme: auto" aria-label="Theme: auto">
 				<i class="ph ph-circle-half"></i>
 			</button>
 			<a class="btn" href="/app/"><i class="ph-bold ph-play"></i><span>Open Walk</span></a>
@@ -670,13 +670,16 @@
 				</ul>
 			</section>
 
-			<img
-				class="shot"
-				src="/images/home-office.jpg"
-				width="1536"
-				height="1024"
-				alt="A Superun or DeerRun style walking pad under a standing desk, with Walk open on the monitor mid-walk"
-			/>
+			<picture>
+				<source srcset="/images/home-office.webp" type="image/webp" />
+				<img
+					class="shot"
+					src="/images/home-office.jpg"
+					width="1536"
+					height="1024"
+					alt="A Superun or DeerRun style walking pad under a standing desk, with Walk open on the monitor mid-walk"
+				/>
+			</picture>
 
 			<section>
 				<h2>Why use Walk instead of the PitPat app</h2>
@@ -718,14 +721,17 @@
 							<span class="dots"><i></i><i></i><i></i></span>
 							<span class="url"><i class="ph ph-lock-simple"></i>walk.omrilotan.com/app</span>
 						</div>
-						<img
-							class="shot"
-							src="/images/desktop.png"
-							width="2560"
-							height="3320"
-							loading="lazy"
-							alt="Walk in a desktop browser: the live walk and controls for a Superun or DeerRun walking pad, today's goal, weekly charts, an activity calendar, recent walks and personal records"
-						/>
+						<picture>
+							<source srcset="/images/desktop.webp" type="image/webp" />
+							<img
+								class="shot"
+								src="/images/desktop.png"
+								width="2560"
+								height="3320"
+								loading="lazy"
+								alt="Walk in a desktop browser: the live walk and controls for a Superun or DeerRun walking pad, today's goal, weekly charts, an activity calendar, recent walks and personal records"
+							/>
+						</picture>
 					</div>
 					<figcaption class="muted small">On a computer: the live walk and controls up top, then today's goal, your week, weekly trends, a six-month activity calendar, recent walks and records.</figcaption>
 				</figure>
@@ -811,15 +817,18 @@
 						<p class="muted small">Walk asks you before the belt starts. Chrome only, for now.</p>
 					</div>
 				</div>
-				<img
-					class="shot"
-					src="/images/agent-comic.jpg"
-					width="1536"
-					height="1024"
-					loading="lazy"
-					style="margin-top: 14px"
-					alt="A six-panel stick-figure comic of a walk with an AI agent. 10:40: 'Walk me while I clear email. Easy pace.' The laptop asks 'Start at 3.0 km/h?' Walk asks first, and the walker taps Allow. 11:00: 'Pause for the call.' 'Paused.' 12:32: '400 m to your goal. Eight more minutes?' 'Keep going.' 12:40: 'Stop.' 'Stopped. 5.0 km, saved.' Friday: 'Your goal was hit every day this week. Raise it to 6?' 'Nope.'"
-				/>
+				<picture>
+					<source srcset="/images/agent-comic.webp" type="image/webp" />
+					<img
+						class="shot"
+						src="/images/agent-comic.jpg"
+						width="1536"
+						height="1024"
+						loading="lazy"
+						style="margin-top: 14px"
+						alt="A six-panel stick-figure comic of a walk with an AI agent. 10:40: 'Walk me while I clear email. Easy pace.' The laptop asks 'Start at 3.0 km/h?' Walk asks first, and the walker taps Allow. 11:00: 'Pause for the call.' 'Paused.' 12:32: '400 m to your goal. Eight more minutes?' 'Keep going.' 12:40: 'Stop.' 'Stopped. 5.0 km, saved.' Friday: 'Your goal was hit every day this week. Raise it to 6?' 'Nope.'"
+					/>
+				</picture>
 			</section>
 
 			<section class="faq">

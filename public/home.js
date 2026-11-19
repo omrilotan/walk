@@ -31,7 +31,7 @@ const current = () => {
 function apply(theme) {
 	if (theme === "auto") delete document.documentElement.dataset.theme;
 	else document.documentElement.dataset.theme = theme;
-	button.title = `Theme: ${theme}`;
+	button.title = button.ariaLabel = `Theme: ${theme}`;
 	button.querySelector("i").className = `ph ${icons[theme]}`;
 	try {
 		localStorage.setItem("walk:theme", theme);

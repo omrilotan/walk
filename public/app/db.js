@@ -128,6 +128,20 @@ export async function exportAll() {
 	return { format: "walk/1", exported: new Date().toISOString(), sessions };
 }
 
+const isNumber = (n) => typeof n === "number" && Number.isFinite(n);
+
+/**
+ * A walk's numbers are drawn into the page as markup, so a file may not hand
+ * over anything else. Steps and calories may be missing, as in old backups.
+ */
+const isWalk = (s) =>
+	isNumber(s.start) &&
+	["distance", "seconds"].every((key) => isNumber(s.totals?.[key])) &&
+	["calories", "steps"].every((key) => s.totals[key] == null || isNumber(s.totals[key])) &&
+	(s.end == null || isNumber(s.end)) &&
+	(s.uid == null || typeof s.uid === "string") &&
+	(s.origin == null || typeof s.origin === "string");
+
 /**
  * What importing a backup would do, without doing it: which of the file's walks
  * are new here (`add`), newer in the file (`update`, with the copy they
@@ -144,7 +158,7 @@ export function planImport(data, local) {
 	let invalid = 0;
 	for (const entry of data.sessions) {
 		const { samples, id: _, dirty: __, ...session } = entry ?? {};
-		if (typeof session.start !== "number" || !session.totals) {
+		if (!isWalk(session)) {
 			invalid++;
 			continue;
 		}

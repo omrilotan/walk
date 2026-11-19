@@ -115,7 +115,7 @@
 						<span id="state-pill" class="pill" data-state="offline">Not connected</span>
 						<span id="target-line" class="muted"></span>
 					</div>
-					<div class="speed-big" aria-live="polite">
+					<div class="speed-big">
 						<span id="speed-now">0.0</span><span class="unit">km/h</span>
 					</div>
 					<svg id="spark" class="spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
@@ -389,7 +389,7 @@
 			<section class="menu-group" aria-label="Your walks">
 				<label class="menu-item">
 					<i class="ph ph-upload-simple"></i><span><b>Import</b><small>Walks from a backup file: merge or replace</small></span>
-					<input id="import" type="file" accept="application/json,.json" hidden />
+					<input id="import" type="file" accept="application/json,.json" />
 				</label>
 				<button id="export" class="menu-item" type="button">
 					<i class="ph ph-download-simple"></i><span><b>Export backup</b><small>Everything, with per-second readings</small></span>
@@ -420,7 +420,7 @@
 		<dialog id="account-dialog" class="about acct" aria-labelledby="acct-title">
 			<form method="dialog" class="about-head">
 				<h2 id="acct-title">Sync and assistants</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 
 			<div id="acct-out">
@@ -465,7 +465,7 @@
 		<dialog id="reset-dialog" class="about reset" aria-labelledby="reset-title">
 			<form method="dialog" class="about-head">
 				<h2 id="reset-title">Reset my data</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<p id="reset-text"></p>
 			<p class="muted small">Your settings stay: goal, speed presets, theme. This can't be undone, so export a backup first if you might want your walks back.</p>
@@ -480,7 +480,7 @@
 		<dialog id="import-dialog" class="about import" aria-labelledby="import-title">
 			<form method="dialog" class="about-head">
 				<h2 id="import-title">Import walks</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<p id="import-source" class="import-source"><i class="ph ph-file-text"></i><span></span></p>
 			<p id="import-summary" class="import-summary"></p>
@@ -507,7 +507,7 @@
 		<dialog id="walk-dialog" class="about walk-form" aria-labelledby="walk-title">
 			<form method="dialog" class="about-head">
 				<h2 id="walk-title">Add a walk</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<form id="walk-form" class="walk-fields" novalidate>
 				<label>Date<input id="walk-date" name="date" type="date" required /></label>
@@ -527,7 +527,7 @@
 		<dialog id="trash-dialog" class="about trash" aria-labelledby="trash-title">
 			<form method="dialog" class="about-head">
 				<h2 id="trash-title">Deleted walks</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<p class="muted small">A deleted walk waits here for 30 days. Then it is gone for good.</p>
 			<ol id="trash-list" class="history trash-list"></ol>
@@ -537,7 +537,7 @@
 		<dialog id="day-dialog" class="about day-detail" aria-labelledby="detail-title">
 			<form method="dialog" class="about-head">
 				<h2 id="detail-title">Day</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<p class="muted small" id="detail-sub"></p>
 			<div class="detail-hero">
@@ -554,7 +554,7 @@
 		<dialog id="agent-dialog" class="about agents" aria-labelledby="agent-title">
 			<form method="dialog" class="about-head">
 				<h2 id="agent-title">Connect your AI agent</h2>
-				<button class="icon-btn" type="submit" title="Close"><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close"><i class="ph ph-x"></i></button>
 			</form>
 			<p>Recommended: connect from anywhere, with cloud sync. Rather not sync? Use an assistant in your browser.</p>
 
@@ -608,7 +608,7 @@
 		<dialog id="about" class="about" aria-labelledby="about-title">
 			<form method="dialog" class="about-head">
 				<h2 id="about-title"><svg class="wordmark" viewBox="76 90 674 239" role="img" aria-label="About Walk"><path d="M76 162H119L136 256 156 162H193L214 256 231 162H274L240 329H194L174 243 156 329H110Z"/><g class="wordmark-walker"><path transform="translate(265 329)" d="M61-167H102L150-34H190V0H116L81-112 57-34H87V0H0Z"/><circle cx="379" cy="117" r="27"/></g><path transform="translate(10 0)" d="M471 162H514V294H582V329H471ZM598 162H642V229L687 162H740L686 236 740 329H688L657 272 642 287V329H598Z"/></svg></h2>
-				<button class="icon-btn" type="submit" title="Close" autofocus><i class="ph ph-x"></i></button>
+				<button class="icon-btn" type="submit" title="Close" aria-label="Close" autofocus><i class="ph ph-x"></i></button>
 			</form>
 			<p>Control your walking pad from the browser and see every walk you've taken. Works with Superun, DeerRun and other PitPat pads.</p>
 			<ul class="about-list">

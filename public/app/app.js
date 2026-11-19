@@ -867,11 +867,24 @@ async function afterAccountChange() {
 	await renderAccountDialog();
 }
 
+/**
+ * Closes a dialog on a click on its backdrop: one that began and ended outside
+ * the window's box. A click on its padding, or a selection dragged out of a
+ * field, must not throw away what was typed.
+ */
+function closeOnBackdrop(dialog) {
+	let pressed = null;
+	dialog.addEventListener("pointerdown", (event) => (pressed = event.target));
+	dialog.addEventListener("click", (event) => {
+		const box = dialog.getBoundingClientRect();
+		const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+		if (event.target === dialog && pressed === dialog && outside) dialog.close();
+	});
+}
+
 function wireAccount() {
 	const dialog = $("#account-dialog");
-	dialog.addEventListener("click", (event) => {
-		if (event.target === event.currentTarget) dialog.close(); // backdrop
-	});
+	closeOnBackdrop(dialog);
 
 	$("#acct-email-form").addEventListener("submit", async (event) => {
 		event.preventDefault();
@@ -988,9 +1001,7 @@ function openAgent() {
 
 function wireAgent() {
 	const dialog = $("#agent-dialog");
-	dialog.addEventListener("click", (event) => {
-		if (event.target === event.currentTarget) dialog.close(); // backdrop
-	});
+	closeOnBackdrop(dialog);
 	$("#agent-start").addEventListener("change", (event) => agentSurface.setStartMode(event.target.value));
 	const chip = $("#agent-copy");
 	chip.addEventListener("click", async () => {
@@ -1546,16 +1557,7 @@ async function init() {
 	const menu = $("#menu");
 	$("#menu-btn").addEventListener("click", () => menu.showModal());
 	for (const dialog of [menu, $("#about"), $("#reset-dialog"), $("#import-dialog"), $("#day-dialog"), $("#walk-dialog"), $("#trash-dialog")]) {
-		// Closes on a click on the backdrop: one that began and ended outside
-		// the window's box. A click on its padding, or a selection dragged out
-		// of a field, must not throw away what was typed.
-		let pressed = null;
-		dialog.addEventListener("pointerdown", (event) => (pressed = event.target));
-		dialog.addEventListener("click", (event) => {
-			const box = dialog.getBoundingClientRect();
-			const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
-			if (event.target === dialog && pressed === dialog && outside) dialog.close();
-		});
+		closeOnBackdrop(dialog);
 	}
 	// Every menu action closes the menu; the theme stays open to compare.
 	menu.addEventListener("click", (event) => {

@@ -32,10 +32,8 @@ const empty = () => ({ walks: 0, distance: 0, seconds: 0, calories: 0, steps: 0 
 function add(into, session) {
 	const t = session.totals;
 	into.walks += 1;
-	into.distance += t.distance;
-	into.seconds += t.seconds;
-	into.calories += t.calories;
-	into.steps += t.steps;
+	// A number from a file or a sync may be anything: never let one concatenate.
+	for (const key of ["distance", "seconds", "calories", "steps"]) into[key] += Number.isFinite(t[key]) ? t[key] : 0;
 	return into;
 }
 
