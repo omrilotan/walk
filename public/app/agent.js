@@ -53,7 +53,7 @@ export async function registerAgentTools(walk) {
 		{
 			name: "get_status",
 			description:
-				"Current pad and walk state: whether the pad is connected, state (offline, stopped, starting, running, paused), current and target speed in km/h, the pad's max speed, the current walk's totals (distance km, seconds, steps, calories), the walk timer (remaining is in minutes or km), and whether starting needs the user's approval.",
+				"Current pad and walk state: whether the pad is connected, state (offline, stopped, starting, running, paused), current and target speed in km/h, the pad's max speed, the current walk's totals (distance km, seconds, steps, calories), the walk timer (from is now or start: the amount is counted from when it was set, or is the walk's total; endsAt is the walk's total when it ends; endsAt and remaining are in minutes or km), and whether starting needs the user's approval.",
 			inputSchema: { type: "object", properties: {} },
 			annotations: { readOnlyHint: true },
 			execute: async () => json(walk.status()),
@@ -258,27 +258,35 @@ export async function registerAgentTools(walk) {
 		{
 			name: "set_timer",
 			description:
-				"Sets the walk timer: when this walk reaches so many minutes, or so many km, Walk chimes, or pauses the belt and chimes. It counts the current walk's own totals, so time already walked counts and pauses don't. kind: time (amount in minutes), distance (amount in km), or off. atEnd: chime (the default) or pause. Tell the user what you set.",
+				"Sets the walk timer: after so many minutes, or so many km, Walk chimes, or pauses the belt and chimes. from says how the amount is counted. now: from this moment, so 10 means 10 more minutes and 0.5 means half a km more. start: as the walk's total, so 3.5 means when this walk reaches 3.5 km, however much is already walked; a total the walk has already passed never ends. Before a walk starts the two are the same. Pauses don't count. kind: time (amount in minutes), distance (amount in km), or off. atEnd: chime or pause. Setting it again starts the count again. Tell the user what you set.",
 			inputSchema: {
 				type: "object",
 				properties: {
 					kind: { type: "string", enum: ["time", "distance", "off"] },
 					amount: { type: "number", description: "Minutes for time, km for distance." },
+					from: {
+						type: "string",
+						enum: ["now", "start"],
+						description: "now: the amount is counted from this moment. start: the amount is the walk's total. Default: the user's last choice.",
+					},
 					atEnd: { type: "string", enum: ["chime", "pause"], description: "What happens at the end. Default: the user's last choice." },
 				},
 				required: ["kind"],
 			},
 			annotations: { consequentialHint: true },
-			execute: async ({ kind, amount, atEnd } = {}) => {
+			execute: async ({ kind, amount, from, atEnd } = {}) => {
 				if (!["time", "distance", "off"].includes(kind)) return "kind must be time, distance or off.";
 				if (kind !== "off" && !(amount > 0)) return "Give an amount: minutes for time, km for distance.";
-				const timer = { kind, ...(atEnd && { end: atEnd }) };
+				if (from != null && !["now", "start"].includes(from)) return "from must be now or start.";
+				const timer = { kind, ...(from && { from }), ...(atEnd && { end: atEnd }) };
 				if (kind === "time") timer.minutes = amount;
 				if (kind === "distance") timer.km = amount;
 				const set = walk.setTimer(timer);
 				if (set.kind === "off") return "Timer off.";
 				const end = set.atEnd === "pause" ? "pause the belt and chime" : "chime";
-				return `Timer set: Walk will ${end} at ${set.amount} ${set.unit} of this walk.`;
+				const when = set.from === "start" ? `when this walk reaches ${set.amount} ${set.unit} in total` : `${set.amount} ${set.unit} from now`;
+				if (set.remaining === 0) return `Timer set, but this walk has already passed ${set.amount} ${set.unit}, so it won't ${end}.`;
+				return `Timer set: Walk will ${end} ${when}.`;
 			},
 		},
 	];

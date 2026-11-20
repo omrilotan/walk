@@ -17,7 +17,22 @@ import { areaChart, barChart, detailData, heatmap } from "./charts.js";
 import { clock, fmt, int, km, minutes } from "./format.js";
 import { summarize } from "./stats.js";
 import { Tracker } from "./tracker.js";
-import { DEFAULT_TIMER, KINDS, amount, chime, crossed, describe, done, goal, normalize, primeChime, progress } from "./timer.js";
+import {
+	DEFAULT_TIMER,
+	KINDS,
+	amount,
+	chime,
+	crossed,
+	describe,
+	describeTarget,
+	done,
+	left,
+	normalize,
+	primeChime,
+	progress,
+	stepped,
+	target,
+} from "./timer.js";
 import { registerAgentTools } from "./agent.js";
 import { changedWalk, manualWalk, numbersOf, problemWith, rates, trashDaysLeft, trashExpired } from "./walks.js";
 import { checkAccount, currentAccount as account, recordDeletion, resetAll, signedIn, sync } from "./sync.js";
@@ -56,8 +71,7 @@ const ui = {
 	startMode: "ask", // agent starts: "ask" or "auto"
 	timer: DEFAULT_TIMER,
 	timerLast: null, // { key, value }: the walk's last count, to see the timer's target crossed
-	timerBase: { seconds: 0, distance: 0 }, // walk totals when the timer was last (re)armed
-	timerBaseUid: null, // the walk that baseline belongs to
+	timerBase: null, // { uid, seconds, distance }: the walk and its totals when a "from now" timer was set
 };
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -249,37 +263,35 @@ function renderHeadline() {
 
 // ---------------------------------------------------------------- timer
 
+/** A change to any of these sets the count going again; a change to what happens at the end doesn't. */
+const TIMER_COUNT = ["kind", "minutes", "km", "from"];
+
 function setTimer(changes) {
 	ui.timer = normalize({ ...ui.timer, ...changes });
-	// The timer counts from the moment you set it, not the walk's start:
-	// anchor the baseline to the walk's totals now (zero when not walking).
-	ui.timerBase = {
-		seconds: tracker.session?.totals.seconds ?? 0,
-		distance: tracker.session?.totals.distance ?? 0,
-	};
-	ui.timerBaseUid = tracker.session?.uid ?? null;
-	ui.timerLast = null; // re-arm the crossing check
+	if (TIMER_COUNT.some((key) => key in changes)) {
+		// "From now" counts from this moment: remember the walk's totals now.
+		// Nothing to remember when not walking; the next walk counts from zero.
+		const session = tracker.session;
+		ui.timerBase = session ? { uid: session.uid, seconds: session.totals.seconds, distance: session.totals.distance } : null;
+		ui.timerLast = null; // re-arm the crossing check
+		setSetting("timerBase", ui.timerBase);
+	}
 	askNotify();
 	renderTimer();
 	setSetting("timer", ui.timer);
 }
 
-/** Walk totals since the timer was armed; a fresh walk recounts from zero. */
-const sinceArmed = (totals) =>
-	totals && {
-		seconds: Math.max(0, totals.seconds - ui.timerBase.seconds),
-		distance: Math.max(0, totals.distance - ui.timerBase.distance),
-	};
+/** The totals a "from now" timer counts from: only for the walk it was set in. */
+const timerBase = (session = tracker.session) => (session && ui.timerBase?.uid === session.uid ? ui.timerBase : null);
 
 function renderTimer() {
 	const timer = ui.timer;
 	const box = $("#timer");
 	box.dataset.kind = timer.kind;
-	for (const button of box.querySelectorAll("button[data-kind]")) {
-		button.setAttribute("aria-checked", String(button.dataset.kind === timer.kind));
-	}
-	for (const button of box.querySelectorAll("button[data-end]")) {
-		button.setAttribute("aria-checked", String(button.dataset.end === timer.end));
+	for (const name of ["kind", "from", "end"]) {
+		for (const button of box.querySelectorAll(`button[data-${name}]`)) {
+			button.setAttribute("aria-checked", String(button.dataset[name] === timer[name]));
+		}
 	}
 	if (timer.kind !== "off") {
 		const { unit, step, min, max } = KINDS[timer.kind];
@@ -299,57 +311,50 @@ function renderTimer() {
 /** The timer's tile (Time or Distance) fills up; the timer row counts down. */
 function renderTimerProgress(totals) {
 	const timer = ui.timer;
-	const t = sinceArmed(totals);
-	const share = t ? progress(timer, t) : 0;
+	const base = timerBase();
+	const share = totals ? progress(timer, totals, base) : 0;
 	for (const tile of document.querySelectorAll("[data-timer-kind]")) {
 		const on = tile.dataset.timerKind === timer.kind;
 		tile.toggleAttribute("data-timer", on);
 		tile.dataset.done = String(on && share === 1);
 		tile.style.setProperty("--progress", on ? String(share) : "0");
-		tile.querySelector(".metric-of").textContent = on ? (share === 1 ? "Done" : `of ${describe(timer)}`) : "";
+		// The tile shows the walk's total, so say the total the timer ends at.
+		tile.querySelector(".metric-of").textContent = on ? (share === 1 ? "Done" : `of ${describeTarget(timer, base)}`) : "";
 	}
 
 	const box = $("#timer");
-	const left = $("#timer-left");
-	if (timer.kind === "off" || !t) {
+	const leftEl = $("#timer-left");
+	if (timer.kind === "off" || !totals) {
 		box.dataset.state = "idle";
-		left.textContent = "";
+		leftEl.textContent = "";
 		return;
 	}
-	const remaining = goal(timer) - done(timer, t);
+	const remaining = left(timer, totals, base);
 	if (remaining <= 0) {
 		box.dataset.state = "done";
-		left.innerHTML = `<i class="ph-bold ph-check"></i>Done`;
+		leftEl.innerHTML = `<i class="ph-bold ph-check"></i>Done`;
 		return;
 	}
 	box.dataset.state = "running";
-	left.textContent = timer.kind === "time" ? `${clock(Math.ceil(remaining))} left` : `${remaining.toFixed(2)} km left`;
+	leftEl.textContent = timer.kind === "time" ? `${clock(Math.ceil(remaining))} left` : `${remaining.toFixed(2)} km left`;
 }
 
 /** On every status: did this update take the walk past the timer's target? */
 function checkTimer(session) {
 	if (!session) {
 		ui.timerLast = null;
-		ui.timerBaseUid = null;
-		ui.timerBase = { seconds: 0, distance: 0 };
 		return;
 	}
-	// A new walk recounts from its own start.
-	if (session.uid !== ui.timerBaseUid) {
-		ui.timerBase = { seconds: 0, distance: 0 };
-		ui.timerBaseUid = session.uid;
-		ui.timerLast = null;
-	}
-	const t = sinceArmed(session.totals);
 	const key = `${session.uid}:${ui.timer.kind}`;
 	const before = ui.timerLast?.key === key ? ui.timerLast.value : null;
-	const after = done(ui.timer, t);
+	const after = done(ui.timer, session.totals);
 	ui.timerLast = { key, value: after };
-	if (crossed(ui.timer, before, after)) timerDone();
+	if (crossed(ui.timer, before, after, timerBase(session))) timerDone();
 }
 
 function timerDone() {
-	const what = `${describe(ui.timer)} done.`;
+	// "10 min done." for a count from now; "3.5 km reached." for the walk's total.
+	const what = `${describe(ui.timer)} ${ui.timer.from === "start" ? "reached" : "done"}.`;
 	chime();
 	const paused = ui.timer.end === "pause" && pad.connected && isMoving();
 	if (paused) pad.pause();
@@ -395,17 +400,13 @@ function wireTimer() {
 		primeChime(); // a tap now lets the chime play later
 		const kind = event.target.closest("button[data-kind]")?.dataset.kind;
 		if (kind) setTimer({ kind });
+		const from = event.target.closest("button[data-from]")?.dataset.from;
+		if (from) setTimer({ from });
 		const end = event.target.closest("button[data-end]")?.dataset.end;
 		if (end) setTimer({ end });
 	});
 	const field = () => (ui.timer.kind === "time" ? "minutes" : "km");
-	const step = (direction) => {
-		const { step } = KINDS[ui.timer.kind];
-		const now = amount(ui.timer);
-		// Snap to the step: 32 goes to 35 or 30.
-		const next = direction > 0 ? Math.floor(now / step + 1e-9) * step + step : Math.ceil(now / step - 1e-9) * step - step;
-		setTimer({ [field()]: next });
-	};
+	const step = (direction) => setTimer({ [field()]: stepped(ui.timer, direction, tracker.session?.totals) });
 	$("#timer-less").addEventListener("click", () => step(-1));
 	$("#timer-more").addEventListener("click", () => step(1));
 	const input = $("#timer-value");
@@ -1373,12 +1374,16 @@ function timerInfo() {
 	const timer = ui.timer;
 	if (timer.kind === "off") return { kind: "off" };
 	const totals = tracker.session?.totals;
+	const per = timer.kind === "time" ? 60 : 1;
 	return {
 		kind: timer.kind,
 		amount: amount(timer),
 		unit: KINDS[timer.kind].unit,
+		from: timer.from,
 		atEnd: timer.end,
-		remaining: totals ? r2(Math.max(0, goal(timer) - done(timer, sinceArmed(totals))) / (timer.kind === "time" ? 60 : 1)) : null,
+		// Both in the timer's unit. endsAt is the walk's own total when the timer ends.
+		endsAt: r2(target(timer, timerBase()) / per),
+		remaining: totals ? r2(left(timer, totals, timerBase()) / per) : null,
 	};
 }
 
@@ -1537,6 +1542,7 @@ async function init() {
 	ui.startMode = await getSetting("agentStart", "ask");
 	$("#goal").value = ui.goal;
 	ui.timer = normalize(await getSetting("timer", DEFAULT_TIMER));
+	ui.timerBase = await getSetting("timerBase", null);
 	renderTimer();
 	setTarget(await getSetting("target", 3));
 	await tracker.finishStale();

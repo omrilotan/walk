@@ -778,15 +778,21 @@ body[data-state="starting"] #speed-now {
 }
 
 .timer-kind button,
+.timer-from button,
 .timer-end button {
 	flex: 1;
 }
 
+/* Narrow: the amount and what it's counted from, then what happens at the end. */
 .timer-set {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 6px;
+}
+
+.timer-end {
+	grid-column: 1 / -1;
 }
 
 .timer[data-kind="off"] .timer-set {
@@ -949,9 +955,26 @@ body[data-state="starting"] #speed-now {
 	opacity: 1;
 }
 
-@container (min-width: 460px) {
+/* Wider: one line. */
+@container (min-width: 520px) {
 	.timer-set {
 		grid-template-columns: minmax(0, 1fr) auto auto;
+	}
+	.timer-end {
+		grid-column: auto;
+	}
+}
+
+@container (min-width: 520px) and (max-width: 619px) {
+	.wide-only {
+		display: none;
+	}
+}
+
+/* Widest: the line reads as a sentence. "30 min, in total, then chime." */
+@container (min-width: 620px) {
+	.timer-set {
+		grid-template-columns: minmax(0, 1fr) auto auto auto;
 	}
 	.timer-then {
 		display: block;
@@ -981,15 +1004,24 @@ body[data-state="starting"] #speed-now {
 	}
 }
 
+/* Narrowest: the amount gets a line of its own. */
 @container (max-width: 330px) {
 	.timer-set {
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+	.timer-amount {
+		grid-column: 1 / -1;
+	}
+	.timer-end {
+		grid-column: auto;
 	}
 	.timer-end i {
 		display: none;
 	}
+	.timer-from button,
 	.timer-end button {
-		padding: 0 7px;
+		padding: 0 6px;
+		font-size: 13px;
 	}
 	.timer-field input {
 		font-size: 16px;

@@ -164,7 +164,7 @@
 						</div>
 					</section>
 
-					<!-- The walk timer (timer.js): chime or pause after so many minutes or km of this walk. -->
+					<!-- The walk timer (timer.js): chime or pause after so many minutes or km, counted from now or as the walk's total. -->
 					<section id="timer" class="band-section timer" data-kind="off" data-state="idle" aria-labelledby="timer-label">
 						<div class="band-head">
 							<span class="label" id="timer-label"><i class="ph ph-hourglass-medium"></i>Timer</span>
@@ -183,6 +183,10 @@
 									<span id="timer-unit">min</span>
 								</label>
 								<button type="button" id="timer-more" class="step" aria-label="More"><i class="ph-bold ph-plus"></i></button>
+							</div>
+							<div class="seg timer-from" role="radiogroup" aria-label="Count from">
+								<button type="button" role="radio" data-from="now" title="Counted from the moment you set it">From now</button>
+								<button type="button" role="radio" data-from="start" title="Counted from the start of this walk">In total</button>
 							</div>
 							<span class="timer-then" aria-hidden="true">then</span>
 							<div class="seg timer-end" role="radiogroup" aria-label="When it's done">

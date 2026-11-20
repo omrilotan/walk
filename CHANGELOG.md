@@ -2,6 +2,15 @@
 
 Walk is a web app, so changes are listed by date, not version.
 
+## 2026-11-20
+
+- The walk timer counts either way now. From now: 10 more minutes, or half a km more, from the moment you set it. In total: the walk as a whole reaches 30 minutes, or 3.5 km, however much is already walked. So at 3.4 km you can ask for a chime at 3.5. Before a walk starts the two are the same.
+- In total, + skips ahead of what you've already walked: at 3.4 km, one tap gives 3.5.
+- The Time or Distance tile says the walk total the timer ends at, such as "of 3.9 km", for both ways of counting.
+- Switching between Chime and Pause no longer starts the count again.
+- A timer set from now keeps its place when the page reloads mid-walk. Before, it started counting from the start of the walk.
+- An AI assistant in the browser can choose how the timer counts too.
+
 ## 2026-11-19
 
 - Import, in the menu, can now be reached and opened with the keyboard.
